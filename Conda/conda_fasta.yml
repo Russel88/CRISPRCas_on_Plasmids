@@ -1,0 +1,13 @@
+name: fasta
+channels:
+  - biobuilds
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - fasta=36.3.8e=1
+  - libgcc=7.2.0=h69d50b8_2
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - zlib=1.2.11=h3c3a69f_1
+
+

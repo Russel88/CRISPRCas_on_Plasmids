@@ -1,0 +1,24 @@
+#!/bin/sh
+#PBS -W group_list=cu_10108 -A cu_10108
+### Number of nodes
+#PBS -l nodes=1:ppn=7:thinnode
+### Memory
+#PBS -l mem=30gb
+### Requesting time - format is <days>:<hours>:<minutes>:<seconds>
+#PBS -l walltime=2:00:00:00
+
+# Go to the directory from where the job was submitted (initial directory is $HOME)
+echo Working directory is $PBS_O_WORKDIR
+cd $PBS_O_WORKDIR
+
+### Fun starts here
+. "/home/projects/cu_10108/people/russel/Software/miniconda3/etc/profile.d/conda.sh"
+conda activate fasta
+
+THERE="/home/projects/cu_10108/data/Generated/Russel/CCP2"
+
+NAME=$(echo $INPUT | sed 's|\.fna$||')
+
+fasta36 -T 7 -m 8 $INPUT ${THERE}/plsdb_masked2.fna > ${NAME}_plsdb.m8
+fasta36 -T 7 -m 8 $INPUT ${THERE}/IMGVR_refs_nucleotides.fna > ${NAME}_IMG.m8
+

@@ -1,0 +1,14 @@
+Collect/
+PLSDB/
+Hosts/
+Archaea/
+Archaea_Hosts/
+CRISPRs/
+Cas/
+CRISPRCas/
+Spacers/
+PLSDB_spacers/
+Hosts_spacers/
+Archaea_spacers/
+Archaea_Hosts_spacers/
+__pycache__/
