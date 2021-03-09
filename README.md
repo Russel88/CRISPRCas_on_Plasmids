@@ -1,5 +1,5 @@
 # CRISPR-Cas on Plasmids
-This is the code repository for for reproducing analyses in the paper:
+This is the code repository for reproducing analyses in the paper:
 
 [CRISPR-Cas systems are widespread accessory elements across plasmids]()
 

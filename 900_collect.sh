@@ -37,3 +37,5 @@ cat PLSDB/size.tab Archaea/size.tab > Collect/size_plasmid.tab
 cat Hosts/size.tab Archaea_Hosts/size.tab > Collect/size_host.tab
 
 cp Spacers/*.m8 Collect/
+
+ln -s ${PWD}/PLSDB/network/scoring_similarity/bindash_sub.tab.gz Collect/bindash_sub.tab.gz
