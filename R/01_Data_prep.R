@@ -17,6 +17,9 @@ criscas_host <- read.table("../Collect/CRISPRCas_host.tab")
 colnames(criscas_plasmid) <- c("Acc", "CRISPR", "Operon", "Distance")
 colnames(criscas_host) <- c("Acc", "CRISPR", "Operon", "Distance")
 
+mobility <- read.table("../Collect/mobility.tab", sep = "\t")
+colnames(mobility) <- c("Acc", "Inc", "Mobility")
+
 # Remove duplicated plasmid's (NC_002128.1) host with different acc 
 cris_host <- cris_host[cris_host$Acc != "NC_002695.1",]
 cas_host <- cas_host[cas_host$Acc != "NC_002695.1",]
@@ -293,6 +296,9 @@ cris_plasmid <- cris_plasmid[cris_plasmid$Derep, ]
 cris_host <- cris_host[cris_host$Derep, ]
 cas_plasmid <- cas_plasmid[cas_plasmid$Derep, ]
 cas_host <- cas_host[cas_host$Derep, ]
+
+# Add mobility
+all_plasmids <- merge(all_plasmids, mobility, by = "Acc")
 
 # Save
 save(cris_plasmid, cris_host, cas_plasmid, cas_host, all_plasmids, all_hosts,

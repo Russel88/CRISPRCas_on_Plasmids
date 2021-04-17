@@ -3,175 +3,127 @@ library(ggplot2)
 # Load data
 load("Prepared.RData")
 
-# Combine
-cas_sub <- cas_plasmid_d[, c("Acc", "Length", "Orphan", "Prediction" ,"Phylum", "Class", "Order", "Family", "Genus")]
-cris_sub <- cris_plasmid_d[is.na(cris_plasmid_d$Prediction), c("Acc", "Length", "Prediction", "Phylum", "Class", "Order", "Family", "Genus")]
-cris_sub$Orphan <- "Orphan CRISPR"
+# Derep
+all_plasmids <- all_plasmids[all_plasmids$Derep, ]
 
-criscas <- rbind(cas_sub, cris_sub)
-colnames(criscas)[3] <- "Group"
+# Split into groups
+all_plasmids$Group <- ifelse(all_plasmids$CRISPRCas > 0, "CRISPR-Cas", 
+                             ifelse(all_plasmids$Cas_Orphan > 0 | all_plasmids$CRISPR_Orphan > 0, "Orphan CRISPR or cas", "No CRISPR or cas"))
+all_plasmids$Group <- factor(all_plasmids$Group, levels = c("CRISPR-Cas", "Orphan CRISPR or cas", "No CRISPR or cas"))
+proteo_plasmids <- all_plasmids[!is.na(all_plasmids$Phylum) & all_plasmids$Phylum == "Proteobacteria", ]
+inc_plasmids <- all_plasmids[grepl("Inc|Col", all_plasmids$Inc), ]
 
-##### Mobility which taxa ######
-mob <- read.table("plasmid_mob.tab")
-colnames(mob) <- c("Acc", "Inc", "Mobility")
-mob$Acc <- gsub("\\.fna","",mob$Acc)
-mob <- mob[mob$Acc %in% drep$Acc, ]
+# Size
+size_quants <- quantile(all_plasmids$Length)
+all_plasmids$SizeQ <- as.factor(ifelse(all_plasmids$Length < size_quants[2], paste0("[",round(size_quants[1]/1000),"-",round(size_quants[2]/1000),"kbp)"),
+                             ifelse(all_plasmids$Length < size_quants[3],  paste0("[",round(size_quants[2]/1000),"-",round(size_quants[3]/1000),"kbp)"),
+                                    ifelse(all_plasmids$Length < size_quants[4],  paste0("[",round(size_quants[3]/1000),"-",round(size_quants[4]/1000),"kbp)"), 
+                                           paste0("[",round(size_quants[4]/1000),"-",round(size_quants[5]/1000),"kbp]")))))
 
-sum(grepl("Inc", mob$Inc)) / nrow(mob)
+all_plasmids_a <- aggregate(Length ~ SizeQ + Group, all_plasmids, function(x) sum(x>0))
+all_plasmids_a$Percent <- all_plasmids_a$Length / nrow(all_plasmids) * 4
 
-criscas <- merge(criscas, mob, by = "Acc", all.x = TRUE)
+all_plasmids_a$SizeQ <- factor(all_plasmids_a$SizeQ, levels = levels(all_plasmids_a$SizeQ)[c(3,2,4,1)])
 
-p <- ggplot(criscas, aes(Phylum, fill = Mobility)) +
+p <- ggplot(all_plasmids_a[all_plasmids_a$Group != "No CRISPR or cas", ], aes(SizeQ, Percent, fill = Group)) +
     theme_bw() +
-    geom_bar() +
-    coord_flip()
-p
-
-p <- ggplot(criscas, aes(Phylum, fill = grepl("Inc", Inc))) +
-    theme_bw() +
-    geom_bar() +
-    coord_flip()
-p
-
-p <- ggplot(criscas, aes(Phylum, fill = grepl("rep_cluster", Inc))) +
-    theme_bw() +
-    geom_bar() +
-    coord_flip()
-p
-
-mobt <- merge(mob, all_plasmids, by = "Acc", all.x = TRUE)
-
-p <- ggplot(mobt, aes(Phylum, fill = Mobility)) +
-    theme_bw() +
-    geom_bar(position="fill") +
-    coord_flip()
-p
-
-p <- ggplot(mobt, aes(Phylum, fill = grepl("Inc", Inc))) +
-    theme_bw() +
-    geom_bar(position="fill") +
-    coord_flip()
-p
-
-p <- ggplot(mobt, aes(Phylum, fill = grepl("rep_cluster", Inc))) +
-    theme_bw() +
-    geom_bar(position="fill") +
-    coord_flip()
-p
-
-#### Mobility #### 
-mobt <- mobt[!mobt$Acc %in% criscas$Acc, ]
-
-criscas_prot <- criscas[criscas$Phylum == "Proteobacteria", ]
-mobt_prot <- mobt[mobt$Phylum == "Proteobacteria", ]
-criscas_mob <- aggregate(Acc ~ Group + Mobility + Genus, data = criscas_prot, length)
-plsdb_mob <- aggregate(Acc ~ Mobility + Genus, data = mobt_prot, length)
-plsdb_mob$Group <- "No CRISPR or Cas"
-plsdb_mob <- plsdb_mob[,c("Group", "Mobility", "Acc", "Genus")]
-
-criscas_mob <- rbind(criscas_mob, plsdb_mob)
-#criscas_mob <- criscas_mob[grepl("proteo", criscas_mob$Class), ]
-#View(aggregate(Acc ~ Genus, mobt_prot, length))
-#criscas_mob <- criscas_mob[criscas_mob$Genus %in% c("Escherichia", "Klebsiella", "Salmonella", 
-#                                                    "Acinetobacter", "Rhizobium","Enterobacter"), ]
-
-
-
-criscas_mob_agg <- aggregate(Acc ~Genus, data = criscas_mob, sum) 
-
-criscas_mob$Group <- factor(criscas_mob$Group, levels = c("No CRISPR or Cas", "Orphan CRISPR", "Orphan Cas", "CRISPR-Cas"))
-
-criscas_mob <- criscas_mob[criscas_mob$Genus %in% criscas_mob_agg[criscas_mob_agg$Acc > 50, "Genus"],]
-
-p <- ggplot(criscas_mob, aes(Group, Acc, fill = Mobility)) +
-    theme_bw() +
-    geom_bar(stat="identity", position = "fill") +
-    coord_flip() +
-    scale_y_continuous(labels=scales::percent) +
-    ylab("Proportion") +
-    facet_wrap(~Genus)
-p
-ggsave(p, file = "Figures/Fig2b.pdf", width = 20, height = 6, units = "cm")
-
-##### Inc ######
-mob$Inc <- as.character(mob$Inc)
-criscas$Inc <- as.character(criscas$Inc)
-criscas$Prediction <- as.character(criscas$Prediction)
-criscas[is.na(criscas$Prediction), "Prediction"] <- "Orphan"
-
-all_mob <- data.frame(table(unlist(lapply(mob$Inc, function(x) strsplit(x, ",")))))
-cc_mob <- data.frame(table(unlist(lapply(criscas[criscas$Group == "CRISPR-Cas","Inc"], function(x) strsplit(x, ",")))))
-
-cc_inc_type <- lapply(unique(criscas$Prediction), function(x) data.frame(table(unlist(lapply(criscas[criscas$Prediction == x,"Inc"], function(x) strsplit(x, ",")))),
-                                                                         Subtype = x))
-
-cc_inc_type <- do.call(rbind, cc_inc_type)
-cc_inc_type <- cc_inc_type[grepl("Inc", cc_inc_type$Var1), ]
-View(xtabs(Freq ~ as.character(Subtype) + as.character(Var1), cc_inc_type))
-
-sum(all_mob[grepl("Inc", all_mob$Var1),  "Freq"])/sum(all_mob$Freq)
-
-#cas_plasmid_d[cas_plasmid_d$Acc %in% criscas[grepl("IncF", criscas$Inc), "Acc"],]
-#cas_plasmid_d[cas_plasmid_d$Acc %in% criscas[grepl("IncH", criscas$Inc), "Acc"],]
-
-all_mob <- all_mob[!grepl("rep_cluster", all_mob$Var1), ]
-cc_mob <- cc_mob[!grepl("rep_cluster", cc_mob$Var1), ]
-all_mob <- all_mob[all_mob$Var1 != "-", ]
-cc_mob <- cc_mob[cc_mob$Var1 != "-", ]
-
-all_mob$Freq <- all_mob$Freq / sum(all_mob$Freq)
-cc_mob$Freq <- cc_mob$Freq / sum(cc_mob$Freq)
-
-all_mob$Group <- "All"
-cc_mob$Group <- "CRISPR-Cas"
-m_mob <- rbind(all_mob, cc_mob)
-#m_mob <- m_mob[!grepl("rep_cluster", m_mob$Var1), ]
-#m_mob <- m_mob[m_mob$Var1 != "-", ]
-
-p <- ggplot(m_mob, aes(Var1, Freq)) +
-    theme_bw() +
-    theme(panel.spacing = unit(1, "lines")) +
     geom_bar(stat = "identity") +
-    coord_flip() +
-    facet_grid(.~Group, scales = "free") +
-    xlab("Inc group") +
-    ylab("Frequency") +
-    scale_y_continuous(labels=scales::percent)
+    scale_y_continuous(labels = scales::percent) +
+    xlab("Size quantile")
 p
-ggsave(p, file = "Figures/Fig2c.pdf", width = 16, height = 12, units = "cm")
+ggsave(p, file = "Figures/Fig2_size.pdf", width = 12, height = 7, units = "cm")
+write.csv(all_plasmids_a[, c("SizeQ", "Group", "Percent")], file = "Tables/Fig2_size.csv", quote = FALSE, row.names = FALSE)
 
-all_mob <- data.frame(table(unlist(lapply(mob$Inc, function(x) strsplit(x, ",")))))
-cc_mob <- data.frame(table(unlist(lapply(criscas[criscas$Group == "CRISPR-Cas","Inc"], function(x) strsplit(x, ",")))))
-all_mob$Freq <- all_mob$Freq / sum(all_mob$Freq)
-cc_mob$Freq <- cc_mob$Freq / sum(cc_mob$Freq)
-cc_mob <- cc_mob[cc_mob$Freq > 0.0066, ]
-m_mob <- merge(all_mob, cc_mob, by = "Var1", all.x = TRUE)
-m_mob[is.na(m_mob$Freq.x), "Freq.x"] <- 0
-m_mob[is.na(m_mob$Freq.y), "Freq.y"] <- 0
-
-m_mob[log2(m_mob$Freq.y/m_mob$Freq.x) > 5,]
-
-hist(log2(m_mob$Freq.y / m_mob$Freq.x))
-
-##### Plasmid size #####
-criscas <- rbind(cas_sub, cris_sub)
-colnames(criscas)[3] <- "Group"
-
-size_plasmid_no <- size_plasmid[!size_plasmid$Acc %in% criscas$Acc, ]
-size_plasmid_no$Group <- "No CRISPR or Cas"
-
-criscas_len <- rbind(criscas[, c("Acc", "Length", "Group")], size_plasmid_no)
-criscas_len$Group <- factor(criscas_len$Group, levels = rev(c("No CRISPR or Cas", "Orphan CRISPR", "Orphan Cas", "CRISPR-Cas")))
-
-p <- ggplot(criscas_len, aes(Length)) +
+p <- ggplot(all_plasmids, aes(Length, fill = Group)) +
     theme_bw() +
-    geom_density(alpha = 0.6, fill = "grey") +
-    ylab("Density") +
-    xlab("Length (bp)") +
+    geom_density() +
     scale_x_log10(labels = COEF::fancy_scientific) +
-    facet_grid(Group ~ .)
+    xlab("Plasmid size (bp)") +
+    ylab("Density") +
+    facet_grid(Group ~ .) +
+    theme(legend.position = "none")
 p
-ggsave(p, file = "Figures/Fig2a.pdf", width = 8, height = 14, units = "cm")
+ggsave(p, file = "Figures/Fig2_size2.pdf", width = 6, height = 14, units = "cm")
+write.csv(all_plasmids[, c("Group", "Length")], file = "Tables/Fig2_size2.csv", quote = FALSE, row.names = FALSE)
 
+# Mobility
+proteo_plasmids$Mobility <- sub('^(\\w?)', '\\U\\1', proteo_plasmids$Mobility, perl=TRUE)
 
+p <- ggplot(proteo_plasmids, aes(Group, fill = Mobility)) +
+    theme_bw() +
+    geom_bar(position = "fill") +
+    coord_flip() +
+    scale_y_continuous(labels = scales::percent) +
+    scale_fill_manual(values = viridis::viridis(3)) +
+    ylab(NULL) +
+    xlab(NULL)
+p
+ggsave(p, file = "Figures/Fig2_mobility.pdf", width = 16, height = 5, units = "cm")
+write.csv(proteo_plasmids[, c("Group", "Mobility")], file = "Tables/Fig2_mobility.csv", quote = FALSE, row.names = FALSE)
 
+# Inc
+inc_plasmids$CRISPRorCas <- inc_plasmids$CRISPRs > 0 | inc_plasmids$Cas > 0
+inc_plasmids$Inc <- gsub("ColRNAI_rep_cluster_[0-9]*", "ColRNAI", inc_plasmids$Inc)
+
+randomize <- function(x){
+    df <- inc_plasmids
+    df$CRISPRorCas <- sample(df$CRISPRorCas)
+    res <- data.frame(table(unlist(lapply(as.character(df[df$CRISPRorCas, "Inc"]), function(x) strsplit(x, ",")))))
+    return(res)
+}
+
+obs_inc <- data.frame(table(unlist(lapply(as.character(inc_plasmids[inc_plasmids$CRISPRorCas, "Inc"]),
+                                         function(x) strsplit(x, ",")))))
+
+set.seed(42)
+rand_inc <- lapply(1:1000, randomize)
+
+test <- Reduce(function(x, y) merge(x, y, by = "Var1", all = TRUE), rand_inc)
+test[is.na(test)] <- 0
+
+random_inc <- data.frame(Inc = test$Var1,
+                         Freq = rowMeans(test[, -1]),
+                         Freq.sd = apply(test[, -1], 1, sd))
+
+combine_inc <- merge(obs_inc, random_inc, by.x = "Var1", by.y = "Inc", all = TRUE)
+combine_inc <- combine_inc[!grepl("rep", combine_inc$Var1), ]
+combine_inc[is.na(combine_inc$Freq.x), "Freq.x"] <- 0
+
+combine_inc$Ratio <- combine_inc$Freq.x - combine_inc$Freq.y
+combine_inc$Rand_max <- (combine_inc$Freq.y + combine_inc$Freq.sd)
+combine_inc$Rand_min <- (combine_inc$Freq.y - combine_inc$Freq.sd)
+combine_inc[combine_inc$Rand_min < 0, "Rand_min"] <- 0
+
+combine_inc$Ratio_max <- combine_inc$Freq.x - combine_inc$Rand_min
+combine_inc$Ratio_min <- combine_inc$Freq.x - combine_inc$Rand_max
+
+combine_inc$Var1 <- as.character(combine_inc$Var1)
+
+p <- ggplot(combine_inc, aes(Var1, Ratio, ymin = Ratio_min, ymax = Ratio_max)) +
+    theme_bw() +
+    geom_point() +
+    geom_errorbar() +
+    coord_flip() +
+    ylab("Difference (Observed - Random)")
+p
+ggsave(p, file = "Figures/Fig2_inc_all.pdf", width = 16, height = 12, units = "cm")
+write.csv(inc_plasmids[, c("Inc", "CRISPRorCas")], file = "Tables/Fig2_Inc.csv", quote = FALSE, row.names = FALSE)
+
+# Only prevalent inc
+inc_prev <- data.frame(table(unlist(lapply(as.character(inc_plasmids$Inc), function(x) strsplit(x, ",")))))
+inc_prev <- inc_prev[!grepl("rep", inc_prev$Var1), ]
+
+combine_inc <- merge(combine_inc, inc_prev, by = "Var1")
+
+p <- ggplot(combine_inc[combine_inc$Freq >= 50, ],
+            aes(Var1, Ratio/Freq, ymin = Ratio_min/Freq, ymax = Ratio_max/Freq)) +
+    theme_bw() +
+    geom_hline(yintercept = 0) +
+    geom_point() +
+    geom_errorbar() +
+    coord_flip() +
+    ylab("Difference (Observed - Random) %") +
+    xlab(NULL) +
+    scale_y_continuous(labels = scales::percent)
+p
+ggsave(p, file = "Figures/Fig2_inc.pdf", width = 12, height = 9, units = "cm")
