@@ -85,7 +85,7 @@ p <- ggplot(criscas_a[criscas_a$Origin == "Chromosome", ], aes(SubType, Type, si
     scale_color_manual(values = c("grey", "cyan", "gold", "purple", "red2", "blue2", "green2"))
 p
 ggsave(p, file = "Figures/Fig1_subtypes_chromosome.pdf", width = 12, height = 8, units = "cm")
-write.csv(criscas_a[criscas_a$Origin == "Plasmid", c("Type", "SubType", "Prediction")], file = "Tables/Fig1_subtypes_chromosomes.csv", quote = FALSE, row.names = FALSE)
+write.csv(criscas_a[criscas_a$Origin == "Chromosome", c("Type", "SubType", "Prediction")], file = "Tables/Fig1_subtypes_chromosomes.csv", quote = FALSE, row.names = FALSE)
 
 ##### Prevalence #####
 prev <- data.frame(Origin = c(rep("Plasmid", 3),

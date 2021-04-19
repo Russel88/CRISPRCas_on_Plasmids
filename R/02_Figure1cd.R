@@ -141,3 +141,5 @@ pheatmap::pheatmap(prev_mat,
                    filename = "Figures/Fig1_heatmap.pdf",
                    width = 8,
                    height = 4.5)
+
+write.csv(prev_all[, c("Class", "Prediction", "Fraction.x", "Fraction.y")], file = "Tables/Fig1_heatmap.csv", quote = FALSE, row.names = FALSE)

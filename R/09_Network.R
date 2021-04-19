@@ -2,8 +2,8 @@
 load("Prepared.RData")
 
 # Load data
-pl_pl <- read.table("../Collect/PLSDB_plsdb.m8")
-colnames(pl_pl) <- c("Spacer", "Target", "Identity", "Alignment", "MM", "Gap", "QStart", "QEnd", "TStart", "TEnd", "Eval", "Bit")
+pl_pl <- read.table("../Collect/PLSDB_plsdb_orf.m8")
+colnames(pl_pl) <- c("Spacer", "Target", "ORF")
 
 # Get Focal names
 pl_pl$CRISPR <- gsub("@.*", "", pl_pl$Spacer)
@@ -12,7 +12,7 @@ pl_pl$Source <- gsub("[._-][-,0-9]*$", "", pl_pl$CRISPR)
 pl_pl$Target <- gsub("\\.[0-9]*$", "", pl_pl$Target)
 
 # Aggregate
-pl_pl_agg <- aggregate(Eval ~ Source + Target, data = pl_pl, function(x) sum(x < 1))
+pl_pl_agg <- aggregate(ORF ~ Source + Target, data = pl_pl, function(x) sum(!is.na(x)))
 colnames(pl_pl_agg)[3] <- "Weight"
 
 # Self-targeting pairs
@@ -32,10 +32,10 @@ node_df <- merge(node_df, tax, by = "Cell", all.x = TRUE)
 node_df$CRISPR <- node_df$Id %in% pl_pl_agg$Source
 
 # Derep
-drep_plsdb$Acc <- gsub(".[0-9]$", "", drep_plsdb$Acc)
-pl_pl_agg <- pl_pl_agg[pl_pl_agg$Source %in% drep_plsdb$Acc & pl_pl_agg$Target %in% drep_plsdb$Acc,]
-node_df <- node_df[node_df$Id %in% drep_plsdb$Acc, ]
+drep <- gsub(".[0-9]$", "", all_plasmids[all_plasmids$Derep, "Acc"])
+pl_pl_agg <- pl_pl_agg[pl_pl_agg$Source %in% drep & pl_pl_agg$Target %in% drep,]
+node_df <- node_df[node_df$Id %in% drep, ]
 node_df <- node_df[node_df$Id %in% c(pl_pl_agg$Source, pl_pl_agg$Target), ]
 
-write.table(node_df, file = "Network_nodes.csv", row.names = FALSE, quote = FALSE, sep = ",")
-write.table(pl_pl_agg, file = "Network_edges.csv", row.names = FALSE, quote = FALSE, sep = ",")
+write.table(node_df, file = "Figures/Network_nodes.csv", row.names = FALSE, quote = FALSE, sep = ",")
+write.table(pl_pl_agg, file = "Figures/Network_edges.csv", row.names = FALSE, quote = FALSE, sep = ",")

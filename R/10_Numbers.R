@@ -6,7 +6,7 @@ sum(all_plasmids$Derep) - nrow(drep_plsdb)
 
 # Number of CRISPR-Cas on plasmids
 table(cas_plasmid[cas_plasmid$Derep,  "Orphan"])
-nrow(cris_plasmid[is.na(cris_plasmid$Operon) & cris_plasmid$Derep, ])
+nrow(cris_plasmid[is.na(cris_plasmid$Operon), ])
 
 # % CRISPR-Cas in hosts
 mean(apply(all_hosts[all_hosts$Derep & !is.na(all_hosts$Kingdom) & all_hosts$Kingdom != "Archaea", c("CRISPRs", "Cas")], 1, sum) > 0)

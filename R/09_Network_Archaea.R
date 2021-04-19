@@ -2,8 +2,8 @@
 load("Prepared.RData")
 
 # Load data
-pl_pl <- read.table("../Collect/Archaea_plsdb.m8")
-colnames(pl_pl) <- c("Spacer", "Target", "Identity", "Alignment", "MM", "Gap", "QStart", "QEnd", "TStart", "TEnd", "Eval", "Bit")
+pl_pl <- read.table("../Collect/Archaea_plsdb_orf.m8")
+colnames(pl_pl) <- c("Spacer", "Target", "ORF")
 
 # Get Focal names
 pl_pl$CRISPR <- gsub("@.*", "", pl_pl$Spacer)
@@ -12,7 +12,7 @@ pl_pl$Source <- gsub("[._-][-,0-9]*$", "", pl_pl$CRISPR)
 pl_pl$Target <- gsub("\\.[0-9]*$", "", pl_pl$Target)
 
 # Aggregate
-pl_pl_agg <- aggregate(Eval ~ Source + Target, data = pl_pl, function(x) sum(x < 1))
+pl_pl_agg <- aggregate(ORF ~ Source + Target, data = pl_pl, function(x) sum(!is.na(x)))
 colnames(pl_pl_agg)[3] <- "Weight"
 
 # Self-targeting pairs

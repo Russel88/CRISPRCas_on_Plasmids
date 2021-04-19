@@ -48,6 +48,7 @@ write.csv(all_plasmids[, c("Group", "Length")], file = "Tables/Fig2_size2.csv", 
 
 # Mobility
 proteo_plasmids$Mobility <- sub('^(\\w?)', '\\U\\1', proteo_plasmids$Mobility, perl=TRUE)
+levels(proteo_plasmids$Group) <- rev(levels(proteo_plasmids$Group))
 
 p <- ggplot(proteo_plasmids, aes(Group, fill = Mobility)) +
     theme_bw() +

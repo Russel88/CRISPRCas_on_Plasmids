@@ -4,13 +4,13 @@ library(ggplot2)
 load("Prepared.RData")
 
 # Load data
-pl_pl <- read.table("../Collect/PLSDB_plsdb.m8")
+pl_pl <- read.table("../Collect/PLSDB_plsdb_orf.m8")
 pl_ph <- read.table("../Collect/PLSDB_IMG.m8")
-hs_pl <- read.table("../Collect/Hosts_plsdb.m8")
+hs_pl <- read.table("../Collect/Hosts_plsdb_orf.m8")
 hs_ph <- read.table("../Collect/Hosts_IMG.m8")
-apl_pl <- read.table("../Collect/Archaea_plsdb.m8")
+apl_pl <- read.table("../Collect/Archaea_plsdb_orf.m8")
 apl_ph <- read.table("../Collect/PLSDB_IMG.m8")
-ahs_pl <- read.table("../Collect/Hosts_plsdb.m8")
+ahs_pl <- read.table("../Collect/Hosts_plsdb_orf.m8")
 ahs_ph <- read.table("../Collect/Hosts_IMG.m8")
 
 pl_pl <- rbind(pl_pl, apl_pl)
@@ -18,9 +18,9 @@ pl_ph <- rbind(pl_ph, apl_ph)
 hs_pl <- rbind(hs_pl, ahs_pl)
 hs_ph <- rbind(hs_ph, ahs_ph)
 
-colnames(pl_pl) <- c("Spacer", "Target", "Identity", "Alignment", "MM", "Gap", "QStart", "QEnd", "TStart", "TEnd", "Eval", "Bit")
+colnames(pl_pl) <- c("Spacer", "Target", "ORF")
 colnames(pl_ph) <- c("Spacer", "Target", "Identity", "Alignment", "MM", "Gap", "QStart", "QEnd", "TStart", "TEnd", "Eval", "Bit")
-colnames(hs_pl) <- c("Spacer", "Target", "Identity", "Alignment", "MM", "Gap", "QStart", "QEnd", "TStart", "TEnd", "Eval", "Bit")
+colnames(hs_pl) <- c("Spacer", "Target", "ORF")
 colnames(hs_ph) <- c("Spacer", "Target", "Identity", "Alignment", "MM", "Gap", "QStart", "QEnd", "TStart", "TEnd", "Eval", "Bit")
 
 pl_pl$Source_Type <- "Plasmid"
@@ -34,7 +34,10 @@ hs_pl$Target_Type <- "Plasmid"
 hs_ph$Target_Type <- "Phage"
 
 # Combine
-all_spacers <- rbind(pl_pl, pl_ph, hs_pl, hs_ph)
+all_spacers <- rbind(pl_pl[, c("Spacer", "Target", "Source_Type", "Target_Type")], 
+                     pl_ph[, c("Spacer", "Target", "Source_Type", "Target_Type")], 
+                     hs_pl[, c("Spacer", "Target", "Source_Type", "Target_Type")], 
+                     hs_ph[, c("Spacer", "Target", "Source_Type", "Target_Type")])
 
 # Get Focal names
 all_spacers$CRISPR <- gsub("@.*", "", all_spacers$Spacer)
@@ -64,22 +67,22 @@ plas_count[plas_count$Source == plas_count$Target, "Target_Type"] <- "Self"
 plas_count <- aggregate(Target ~ Source + Target_Type, data = plas_count, function(x) length(unique(x)))
 pl_many_cast <- reshape2::dcast(plas_count, Source~Target_Type, value.var = "Target", fill = 0)
 
-#write.table(pl_many_cast, file = "Tables/Plasmid_target_count.tab", row.names = FALSE, quote = FALSE, sep = "\t")
+write.table(pl_many_cast, file = "Tables/Plasmid_target_count.tab", row.names = FALSE, quote = FALSE, sep = "\t")
 
-# Only count spacers once in each target group
+# Only count spacers once in each target group (CRISPR is used as a stand-in variable for de-replicating)
 all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Target_Type, data = all_spacers, function(x) 1)
 
 pl_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Plasmid" & all_spacers_unq$Target_Type != "Self", ]
 hs_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Chromosome", ]
 
-pdf(file = "Figures/Fig3_plasmid_euler_all.pdf", width = 6, height = 4)
+pdf(file = "Figures/Fig3_plasmid_euler.pdf", width = 6, height = 4)
 plot(euler(list(Phage = pl_spacers_unq[pl_spacers_unq$Target_Type == "Phage", "Spacer"],
                 Plasmid = pl_spacers_unq[pl_spacers_unq$Target_Type == "Plasmid", "Spacer"])),
      fill = c("orange", "cyan3"), alpha = 0.8,
      quantities = list(type = c("counts", "percent")))
 dev.off()
 
-pdf(file = "Figures/Fig3_host_euler_all.pdf", width = 6, height = 4)
+pdf(file = "Figures/Fig3_host_euler.pdf", width = 6, height = 4)
 plot(euler(list(Phage = hs_spacers_unq[hs_spacers_unq$Target_Type == "Phage", "Spacer"],
                 Plasmid = hs_spacers_unq[hs_spacers_unq$Target_Type == "Plasmid", "Spacer"])),
      fill = c("orange", "cyan3"), alpha = 0.8,
