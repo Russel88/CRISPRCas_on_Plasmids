@@ -11,7 +11,7 @@ cat <(awk '{print $2,$1,$3,$4,$9+1,$20,$21}' CRISPRs/Archaea_Hosts/crisprs_final
 cat CRISPRCas/Archaea_crispr_cas_distance_nearest.tab CRISPRCas/PLSDB_crispr_cas_distance_nearest.tab > Collect/CRISPRCas_plasmid.tab
 cat CRISPRCas/Archaea_Hosts_crispr_cas_distance_nearest.tab CRISPRCas/Hosts_crispr_cas_distance_nearest.tab > Collect/CRISPRCas_host.tab
 
-join -t$'\t' -j1 <(tail -n+2 PLSDB/plsdb_host_etc.tsv | sort -k1,1) <(cut -f1,6 PLSDB/plsdb_assembly_metadata.tsv | tail -n+2 | sort -k1,1) \
+join -t$'\t' -j1 <(tail -n+2 PLSDB/plsdb_host_etc.tsv | sort -k1,1) <(cut -f1,5 PLSDB/plsdb_assembly_metadata.tsv | tail -n+2 | sort -k1,1) \
     | sort -k4,4 -u | awk -F'\t' 'BEGIN{OFS="\t"}{print $5,$2,$3,$4}' > Collect/cell_plsdb.tab
 
 join -t$'\t' -j1 <(tail -n+2 Archaea/archaea_host_etc.tsv | sort -k1,1) <(cut -f1,4 Archaea/archaea_assembly_metadata.tsv | tail -n+2 | sort -k1,1) \
@@ -39,3 +39,5 @@ cat Hosts/size.tab Archaea_Hosts/size.tab > Collect/size_host.tab
 cp Spacers/*.m8 Collect/
 
 ln -s ${PWD}/PLSDB/network/scoring_similarity/bindash_sub.tab.gz Collect/bindash_sub.tab.gz
+
+cat <(tail -q -n+2 PLSDB/mob/*) <(tail -q -n+2 Archaea/mob/*) | cut -f1,6,14 | sed 's/\.fna//' > Collect/mobility.tab
