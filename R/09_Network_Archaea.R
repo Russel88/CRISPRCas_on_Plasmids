@@ -3,7 +3,7 @@ load("Prepared.RData")
 
 # Load data
 pl_pl <- read.table("../Collect/Archaea_plsdb_orf.m8")
-colnames(pl_pl) <- c("Spacer", "Target", "ORF")
+colnames(pl_pl) <- c("Spacer", "Target", "TStart", "TEnd", "ORF")
 
 # Get Focal names
 pl_pl$CRISPR <- gsub("@.*", "", pl_pl$Spacer)

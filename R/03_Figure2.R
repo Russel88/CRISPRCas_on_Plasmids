@@ -14,41 +14,36 @@ proteo_plasmids <- all_plasmids[!is.na(all_plasmids$Phylum) & all_plasmids$Phylu
 inc_plasmids <- all_plasmids[grepl("Inc|Col", all_plasmids$Inc), ]
 
 # Size
-size_quants <- quantile(all_plasmids$Length)
-all_plasmids$SizeQ <- as.factor(ifelse(all_plasmids$Length < size_quants[2], paste0("[",round(size_quants[1]/1000),"-",round(size_quants[2]/1000),"kbp)"),
-                             ifelse(all_plasmids$Length < size_quants[3],  paste0("[",round(size_quants[2]/1000),"-",round(size_quants[3]/1000),"kbp)"),
-                                    ifelse(all_plasmids$Length < size_quants[4],  paste0("[",round(size_quants[3]/1000),"-",round(size_quants[4]/1000),"kbp)"), 
-                                           paste0("[",round(size_quants[4]/1000),"-",round(size_quants[5]/1000),"kbp]")))))
+cc_median <- median(all_plasmids[all_plasmids$Group == "CRISPR-Cas", "Length"])
+oc_median <- median(all_plasmids[all_plasmids$Group == "Orphan CRISPR or cas", "Length"])
+nc_median <- median(all_plasmids[all_plasmids$Group == "No CRISPR or cas", "Length"])
 
-all_plasmids_a <- aggregate(Length ~ SizeQ + Group, all_plasmids, function(x) sum(x>0))
-all_plasmids_a$Percent <- all_plasmids_a$Length / nrow(all_plasmids) * 4
+library(mixtools)
+m <- normalmixEM2comp(log10(all_plasmids[all_plasmids$Group == "No CRISPR or cas", "Length"]), sigsqrd = c(1,2), mu = c(3,5), lambda = 0.5)
+param <- 10^m$mu
 
-all_plasmids_a$SizeQ <- factor(all_plasmids_a$SizeQ, levels = levels(all_plasmids_a$SizeQ)[c(3,2,4,1)])
-
-p <- ggplot(all_plasmids_a[all_plasmids_a$Group != "No CRISPR or cas", ], aes(SizeQ, Percent, fill = Group)) +
-    theme_bw() +
-    geom_bar(stat = "identity") +
-    scale_y_continuous(labels = scales::percent) +
-    xlab("Size quantile")
-p
-ggsave(p, file = "Figures/Fig2_size.pdf", width = 12, height = 7, units = "cm")
-write.csv(all_plasmids_a[, c("SizeQ", "Group", "Percent")], file = "Tables/Fig2_size.csv", quote = FALSE, row.names = FALSE)
+line_df <- data.frame(Group = c("CRISPR-Cas","Orphan CRISPR or cas","No CRISPR or cas","No CRISPR or cas"),
+                      LengthS = paste(round(c(cc_median,oc_median,param[1],param[2])/1000),"kbp"),
+                      Length = c(cc_median,oc_median,param[1],param[2]),
+                      Place = c(2.1,1.4,1,1))
 
 p <- ggplot(all_plasmids, aes(Length, fill = Group)) +
     theme_bw() +
     geom_density() +
+    geom_vline(data = line_df, aes(xintercept = Length)) +
+    geom_text(data = line_df, aes(label = LengthS, y = Place, x = Length), hjust = -0.2, size = 3) +
     scale_x_log10(labels = COEF::fancy_scientific) +
     xlab("Plasmid size (bp)") +
     ylab("Density") +
-    facet_grid(Group ~ .) +
+    facet_grid(Group ~ ., scales = "free") +
     theme(legend.position = "none")
 p
-ggsave(p, file = "Figures/Fig2_size2.pdf", width = 6, height = 14, units = "cm")
+ggsave(p, file = "Figures/Fig2_size2.pdf", width = 8, height = 16, units = "cm")
 write.csv(all_plasmids[, c("Group", "Length")], file = "Tables/Fig2_size2.csv", quote = FALSE, row.names = FALSE)
 
 # Mobility
 proteo_plasmids$Mobility <- sub('^(\\w?)', '\\U\\1', proteo_plasmids$Mobility, perl=TRUE)
-levels(proteo_plasmids$Group) <- rev(levels(proteo_plasmids$Group))
+proteo_plasmids$Group <- factor(proteo_plasmids$Group, levels = c("No CRISPR or cas", "Orphan CRISPR or cas", "CRISPR-Cas"))
 
 p <- ggplot(proteo_plasmids, aes(Group, fill = Mobility)) +
     theme_bw() +

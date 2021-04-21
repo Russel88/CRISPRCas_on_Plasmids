@@ -3,7 +3,7 @@ load("Prepared.RData")
 
 # Load data
 pl_pl <- read.table("../Collect/PLSDB_plsdb_orf.m8")
-colnames(pl_pl) <- c("Spacer", "Target", "ORF")
+colnames(pl_pl) <- c("Spacer", "Target", "TStart", "TEnd", "ORF")
 
 # Get Focal names
 pl_pl$CRISPR <- gsub("@.*", "", pl_pl$Spacer)
@@ -16,10 +16,11 @@ pl_pl_agg <- aggregate(ORF ~ Source + Target, data = pl_pl, function(x) sum(!is.
 colnames(pl_pl_agg)[3] <- "Weight"
 
 # Self-targeting pairs
-nrow(pl_pl_agg[pl_pl_agg$Source == pl_pl_agg$Target, ])
+selfs <- nrow(pl_pl_agg[pl_pl_agg$Source == pl_pl_agg$Target, ])
+pl_pl_agg <- pl_pl_agg[pl_pl_agg$Source != pl_pl_agg$Target, ]
 
 # Cross-targeting pairs
-(sum(paste(pl_pl_agg$Source, pl_pl_agg$Target) %in% paste(pl_pl_agg$Target, pl_pl_agg$Source)) - .Last.value) / 2
+(sum(paste(pl_pl_agg$Source, pl_pl_agg$Target) %in% paste(pl_pl_agg$Target, pl_pl_agg$Source)) - selfs) / 2
 crosstarget <- pl_pl_agg[which(paste(pl_pl_agg$Source, pl_pl_agg$Target) %in% paste(pl_pl_agg$Target, pl_pl_agg$Source)), ]
 write.table(crosstarget, file = "Tables/crosstarget.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
