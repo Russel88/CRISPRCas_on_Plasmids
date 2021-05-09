@@ -33,6 +33,12 @@ dereps <- gsub("\\.[0-9]*$", "", c(as.character(all_plasmids[all_plasmids$Derep,
                                    as.character(all_hosts[all_hosts$Derep, "Acc"])))
 all_spacers <- all_spacers[all_spacers$Source %in% dereps & all_spacers$Target %in% dereps, ]
 
+# Remove those from untyped orphans
+orphans <- c(as.character(cris_plasmid[is.na(cris_plasmid$Prediction) & is.na(cris_plasmid$Subtype), "CRISPR"]),
+             as.character(cris_host[is.na(cris_host$Prediction) & is.na(cris_host$Subtype), "CRISPR"]))
+
+all_spacers <- all_spacers[!gsub("@[0-9]*$", "", all_spacers$Spacer) %in% orphans, ]
+
 # Aggregate
 all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Source + Target, data = all_spacers, function(x) 1)
 
@@ -79,6 +85,15 @@ df_agg <- rbind(df_agg, data.frame(Source_Type = c("All plasmids", "All plasmids
                                    Con = c("Conjugative", "Non-conjugative"),
                                    N = c(tabcon[1], sum(tabcon[2:3]))))
 
+Counts <- aggregate(N ~ Source_Type, df_agg, sum)
+counts <- Counts$N
+names(counts) <- Counts$Source_Type
+
+df_agg$Source_Type <- as.factor(df_agg$Source_Type)
+
+df_agg$Source_Type <- factor(df_agg$Source_Type, 
+                                labels = paste0(levels(df_agg$Source_Type), "\n(n=", counts[levels(df_agg$Source_Type)], ")"))
+
 p <- ggplot(df_agg, aes(Source_Type, N, fill = Con)) +
     theme_bw() +
     geom_bar(stat = "identity", position = "fill") +
@@ -86,7 +101,8 @@ p <- ggplot(df_agg, aes(Source_Type, N, fill = Con)) +
     ylab("Percentage") +
     xlab("Spacer source") +
     scale_y_continuous(labels = scales::percent) +
-    scale_fill_manual("Mobility of target plasmid", values = viridis::viridis(2)) +
+    scale_fill_manual("Mobility of target plasmid", values = viridis::viridis(3)) +
     geom_vline(xintercept = 1.5)
 p
 ggsave(p, file = "Figures/Fig4_target_mobility.pdf", width = 16, height = 6, units = "cm")
+

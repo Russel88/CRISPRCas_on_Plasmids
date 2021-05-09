@@ -3,9 +3,15 @@ library(ggplot2)
 # Load data
 load("Prepared.RData")
 
+#these <- intersect(union(cris_host$Cell, cas_host$Cell), union(cas_plasmid$Cell, cris_plasmid$Cell))
+#cris_host <- cris_host[cris_host$Cell %in% these, ]
+#cris_plasmid <- cris_plasmid[cris_plasmid$Cell %in% these, ]
+#cas_host <- cas_host[cas_host$Cell %in% these, ]
+#cas_plasmid <- cas_plasmid[cas_plasmid$Cell %in% these, ]
+
 ##### Distribution Cas ##### 
-cas_plasmid_d <- cas_plasmid[cas_plasmid$Derep, c("Acc", "Prediction", "Orphan", "Cell")]
-cas_host_d <- cas_host[cas_host$Derep, c("Acc", "Prediction", "Orphan", "Cell")]
+cas_plasmid_d <- cas_plasmid[, c("Acc", "Prediction", "Orphan", "Cell")]
+cas_host_d <- cas_host[, c("Acc", "Prediction", "Orphan", "Cell")]
 
 cas_plasmid_d$Origin <- "Plasmid"
 cas_host_d$Origin <- "Chromosome"
@@ -22,21 +28,19 @@ cris_host_d$Origin <- "Chromosome"
 cris <- rbind(cris_plasmid_d, cris_host_d)
 cris$Prediction <- as.character(cris$Prediction)
 
-cris[is.na(cris$Prediction), "Prediction"] <- "Orphan"
+cris$Orphan <- is.na(cris$Prediction)
+cris$Prediction <- ifelse(is.na(cris$Subtype), "Other", cris$Subtype)
 
 ##### Distribution CRISPR-Cas ##### 
 cas_sub <- cas[, c("Prediction", "Origin", "Cell", "Orphan", "Acc")]
-cris_sub <- cris[cris$Prediction == "Orphan", c("Prediction", "Origin", "Cell", "Acc")]
+cris_sub <- cris[cris$Orphan, c("Prediction", "Origin", "Cell", "Acc")]
 cris_sub$Orphan <- "Orphan CRISPR"
 
 criscas <- rbind(cas_sub, cris_sub)
-criscas[criscas$Prediction == "Orphan", "Prediction"] <- NA
 colnames(criscas)[4] <- "System"
 
-criscas <- criscas[!is.na(criscas$Prediction), ]
-
 criscas$Prediction <- as.character(criscas$Prediction)
-criscas[grepl("Hybrid", criscas$Prediction), "Prediction"] <- "Hybrid"
+criscas[grepl("Hybrid", criscas$Prediction), "Prediction"] <- "Other"
 
 criscas$Type <- gsub("-.*", "", criscas$Prediction)
 criscas$SubType <- gsub(".*-", "", criscas$Prediction)
@@ -46,8 +50,10 @@ criscas_aT <- aggregate(Prediction ~ Type + Origin, data = criscas, function(x) 
 criscas_aT$SubType <- "Total"
 criscas_a <- rbind(criscas_a, criscas_aT)
 
-criscas_a$SubType <- factor(criscas_a$SubType, levels = c("A", "A1", "A2", "A3", "B", "B1", "C", "D", "E", "F", "F_T", "G", "J", "K", "Hybrid", "Total"))
-criscas_a$Type <- factor(criscas_a$Type, levels = c("Hybrid", "VI", "V", "IV", "III", "II", "I"))
+criscas_a$SubType <- factor(criscas_a$SubType, levels = c("A", "A1", "A2", "A3", "B", "B1", "C", "D", "E", "F", "F_T", "G", "J", "K", "Other", "Total"))
+criscas_a$Type <- factor(criscas_a$Type, levels = c("Other", "VI", "V", "IV", "III", "II", "I"))
+
+ns <- aggregate(Prediction ~ Origin, criscas_a[criscas_a$SubType == "Total", ], sum)
 
 # Only plasmids
 p <- ggplot(criscas_a[criscas_a$Origin == "Plasmid", ], aes(SubType, Type, size = Prediction, color = Type)) +

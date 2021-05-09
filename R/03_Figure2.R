@@ -27,6 +27,12 @@ line_df <- data.frame(Group = c("CRISPR-Cas","Orphan CRISPR or cas","No CRISPR o
                       Length = c(cc_median,oc_median,param[1],param[2]),
                       Place = c(2.1,1.4,1,1))
 
+n <- table(all_plasmids$Group)
+all_plasmids$Group <- factor(all_plasmids$Group, 
+                                labels = paste0(levels(all_plasmids$Group), " (n=", n[levels(all_plasmids$Group)], ")"))
+line_df$Group <- factor(line_df$Group, 
+                             labels = paste0(levels(line_df$Group), " (n=", n[levels(line_df$Group)], ")"))
+
 p <- ggplot(all_plasmids, aes(Length, fill = Group)) +
     theme_bw() +
     geom_density() +
@@ -44,6 +50,11 @@ write.csv(all_plasmids[, c("Group", "Length")], file = "Tables/Fig2_size2.csv", 
 # Mobility
 proteo_plasmids$Mobility <- sub('^(\\w?)', '\\U\\1', proteo_plasmids$Mobility, perl=TRUE)
 proteo_plasmids$Group <- factor(proteo_plasmids$Group, levels = c("No CRISPR or cas", "Orphan CRISPR or cas", "CRISPR-Cas"))
+proteo_plasmids[!proteo_plasmids$Mobility == "Conjugative", "Mobility"] <- "Non-conjugative"
+
+n <- table(proteo_plasmids$Group)
+proteo_plasmids$Group <- factor(proteo_plasmids$Group, 
+                                labels = paste0(levels(proteo_plasmids$Group), "\n(n=", n[levels(proteo_plasmids$Group)], ")"))
 
 p <- ggplot(proteo_plasmids, aes(Group, fill = Mobility)) +
     theme_bw() +
@@ -95,31 +106,51 @@ combine_inc$Ratio_min <- combine_inc$Freq.x - combine_inc$Rand_max
 
 combine_inc$Var1 <- as.character(combine_inc$Var1)
 
-p <- ggplot(combine_inc, aes(Var1, Ratio, ymin = Ratio_min, ymax = Ratio_max)) +
-    theme_bw() +
-    geom_point() +
-    geom_errorbar() +
-    coord_flip() +
-    ylab("Difference (Observed - Random)")
-p
-ggsave(p, file = "Figures/Fig2_inc_all.pdf", width = 16, height = 12, units = "cm")
-write.csv(inc_plasmids[, c("Inc", "CRISPRorCas")], file = "Tables/Fig2_Inc.csv", quote = FALSE, row.names = FALSE)
-
-# Only prevalent inc
 inc_prev <- data.frame(table(unlist(lapply(as.character(inc_plasmids$Inc), function(x) strsplit(x, ",")))))
 inc_prev <- inc_prev[!grepl("rep", inc_prev$Var1), ]
 
 combine_inc <- merge(combine_inc, inc_prev, by = "Var1")
 
-p <- ggplot(combine_inc[combine_inc$Freq >= 50, ],
-            aes(Var1, Ratio/Freq, ymin = Ratio_min/Freq, ymax = Ratio_max/Freq)) +
+combine_inc$IncN <- paste0(combine_inc$Var1, " (n=", combine_inc$Freq, ")")
+
+p <- ggplot(combine_inc, aes(IncN, Ratio, ymin = Ratio_min, ymax = Ratio_max)) +
     theme_bw() +
-    geom_hline(yintercept = 0) +
     geom_point() +
     geom_errorbar() +
     coord_flip() +
-    ylab("Difference (Observed - Random) %") +
+    ylab("Difference (Observed - Random)") +
+    xlab(NULL)
+p
+ggsave(p, file = "Figures/Fig2_inc_all_supp.pdf", width = 16, height = 16, units = "cm")
+write.csv(inc_plasmids[, c("Inc", "CRISPRorCas")], file = "Tables/Fig2_Inc.csv", quote = FALSE, row.names = FALSE)
+
+# Bar
+all_inc <- data.frame(table(unlist(lapply(as.character(all_plasmids[all_plasmids$Derep, "Inc"]),
+                                          function(x) strsplit(x, ",")))))
+
+obs_inc$Group <- "CRISPR-Cas"
+all_inc$Group <- "All"
+merge_inc <- merge(obs_inc, all_inc, by = "Var1")
+merge_inc$Perc <- merge_inc$Freq.x / merge_inc$Freq.y
+
+
+merge_inc[is.na(merge_inc$Freq.x), "Freq.x"] <- 0
+ncc_inc <- data.frame(Var1 = merge_inc$Var1, 
+                      Freq = merge_inc$Freq.y - merge_inc$Freq.x,
+                      Group = "No CRISPR-Cas")
+
+merge_inc <- merge_inc[!grepl("rep", merge_inc$Var1), ]
+
+merge_inc$Var1 <- paste0(merge_inc$Var1, " (n=", merge_inc$Freq.y, ")")
+
+merge_inc <- merge_inc[merge_inc$Freq.y >= 50, ]
+
+p <- ggplot(merge_inc, aes(Var1, Perc)) +
+    theme_bw() +
+    coord_flip() +
+    geom_bar(stat = "identity") +
+    scale_y_continuous(labels = scales::percent) +
     xlab(NULL) +
-    scale_y_continuous(labels = scales::percent)
+    ylab("Proportion with CRISPR or Cas loci")
 p
 ggsave(p, file = "Figures/Fig2_inc.pdf", width = 12, height = 9, units = "cm")

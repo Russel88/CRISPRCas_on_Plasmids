@@ -55,22 +55,43 @@ all_spacers <- all_spacers[all_spacers$Source %in% dereps &
 all_spacers_agg <- aggregate(Spacer ~ Source + Target + Source_Type + Target_Type, data = all_spacers, function(x) length(unique(x)))
 
 # Target count
-phage_count <- aggregate(Target_Type ~ Source + Source_Type, all_spacers_agg, function(x) length(x[x=="Phage"]))
-plasmid_count <- aggregate(Target_Type ~ Source + Source_Type, all_spacers_agg, function(x) length(x[x=="Plasmid"]))
+match_count <- aggregate(Spacer ~ Target_Type + Source + Source_Type, all_spacers_agg, function(x) length(unique(x)))
+
+# Total spacers
+total_spacer <- aggregate(Repeats+1 ~ Acc, rbind(cris_plasmid[, c("Acc", "Repeats")],
+                                                    cris_host[, c("Acc", "Repeats")]), sum)
+total_spacer$Source <- gsub("\\.[0-9]*$", "", total_spacer$Acc)
+colnames(total_spacer)[2] <- "Spacers"
 
 # Should not be counts, but percentage of all spacers matching phage or plasmid
+match_count <- merge(match_count, total_spacer, by = "Source")
+match_count$Prop <- match_count$Spacer / match_count$Spacers
 
+plasmid_count <- match_count[match_count$Target_Type == "Plasmid", c("Source", "Source_Type", "Prop")]
+phage_count <- match_count[match_count$Target_Type == "Phage", c("Source", "Source_Type", "Prop")]
 
-match_count <- merge(plasmid_count, phage_count, by = "Source")
-match_count <- match_count[match_count$Target_Type.y < 1000, ]
+plot_count <- merge(phage_count, plasmid_count, by = "Source")
 
-p <- ggplot(match_count, aes(Target_Type.y+1, Target_Type.x+1)) +
+p <- ggplot(plot_count, aes(Prop.x, Prop.y, color = Source_Type.x)) +
     theme_bw() +
     geom_density2d() +
-    facet_grid(~Source_Type.x) +
-    ylab("Plasmid targets") +
-    xlab("Phage targets") +
-    scale_y_log10() +
-    scale_x_log10() +
-    coord_equal()
+    ylab("Proportion of spacers targeting plasmids") +
+    xlab("Proportion of spacers targeting phages") +
+    geom_smooth(method = "lm", formula = y~x, size = 2) +
+    scale_x_log10(labels = scales::percent) +
+    scale_y_log10(labels = scales::percent) +
+    scale_color_manual(name = "Source", values = c("blue2", "red2"))+
+    theme(legend.position = c(0.18,0.85))
 p
+ggsave(p, file = "Figures/Fig3_density.pdf", width = 11, height = 9, units = "cm")
+
+p <- ggplot(plot_count, aes(Prop.x, Prop.y, color = Source_Type.x)) +
+    theme_bw() +
+    geom_density2d() +
+    ylab("Proportion of spacers targeting plasmids") +
+    xlab("Proportion of spacers targeting phages") +
+    scale_color_manual(name = "Source", values = c("blue2", "red2"))+
+    theme(legend.position = c(0.80,0.85)) +
+    coord_cartesian(ylim = c(0,0.22), xlim = c(0,0.22))
+p
+ggsave(p, file = "Figures/Fig3_density_no_log.pdf", width = 11, height = 9, units = "cm")
