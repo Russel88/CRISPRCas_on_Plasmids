@@ -3,12 +3,6 @@ library(ggplot2)
 # Load data
 load("Prepared.RData")
 
-#these <- intersect(union(cris_host$Cell, cas_host$Cell), union(cas_plasmid$Cell, cris_plasmid$Cell))
-#cris_host <- cris_host[cris_host$Cell %in% these, ]
-#cris_plasmid <- cris_plasmid[cris_plasmid$Cell %in% these, ]
-#cas_host <- cas_host[cas_host$Cell %in% these, ]
-#cas_plasmid <- cas_plasmid[cas_plasmid$Cell %in% these, ]
-
 ##### Distribution Cas ##### 
 cas_plasmid_d <- cas_plasmid[, c("Acc", "Prediction", "Orphan", "Cell")]
 cas_host_d <- cas_host[, c("Acc", "Prediction", "Orphan", "Cell")]

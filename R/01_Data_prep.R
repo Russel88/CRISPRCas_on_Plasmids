@@ -181,10 +181,6 @@ cris_host_final <- merge(cris_host, criscas_host_final[, c("CRISPR", "Operon", "
 cris_plasmid_final <- merge(cris_plasmid_final, cas_plasmid_final[, c("Prediction", "Operon")], by = "Operon", all.x = TRUE)
 cris_host_final <- merge(cris_host_final, cas_host[, c("Prediction", "Operon")], by = "Operon", all.x = TRUE)
 
-# Remove untyped orphans
-# cris_plasmid_final <- cris_plasmid_final[!(is.na(cris_plasmid_final$Prediction) & is.na(cris_plasmid_final$Subtype)), ]
-# cris_host_final <- cris_host_final[!(is.na(cris_host_final$Prediction) & is.na(cris_host_final$Subtype)), ]
-
 # Add CRISPRs to Cas
 cas_host_final <- cas_host
 cas_plasmid_final$Orphan <- ifelse(cas_plasmid_final$Operon %in% na.omit(cris_plasmid_final[, "Operon"]), 

@@ -61,11 +61,23 @@ all_spacers <- all_spacers[!gsub("@[0-9]*$", "", all_spacers$Spacer) %in% orphan
 sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
 sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] - 1)
 
+# Type IV spacers
+sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans & grepl("IV-", cris_plasmid$Prediction), "Repeats"] - 1) /
+sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
+
 # Only count spacers once in each target group (CRISPR is used as a stand-in variable for de-replicating)
 all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Target_Type, data = all_spacers, function(x) 1)
 
 pl_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Plasmid" & all_spacers_unq$Target_Type != "Self", ]
 hs_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Chromosome", ]
+
+# Percent match
+nrow(pl_spacers_unq) / sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
+nrow(hs_spacers_unq) / sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] - 1)
+
+# Type IV matches
+nrow(pl_spacers_unq[gsub("@[0-9]*$", "", pl_spacers_unq$Spacer) %in% cris_plasmid[!cris_plasmid$CRISPR %in% orphans & 
+                                      grepl("IV-", cris_plasmid$Prediction), "CRISPR"], ]) / nrow(pl_spacers_unq)
 
 # Plot
 pdf(file = "Figures/Fig3_plasmid_euler.pdf", width = 6, height = 4)

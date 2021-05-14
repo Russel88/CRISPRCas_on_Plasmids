@@ -74,6 +74,9 @@ plot_count <- merge(phage_count, plasmid_count, by = "Source")
 
 p <- ggplot(plot_count, aes(Prop.x, Prop.y, color = Source_Type.x)) +
     theme_bw() +
+    geom_abline(slope = 1, intercept = 0, color = "black", size = 1, linetype = "dotted") +
+    coord_equal(xlim = c(min(plot_count$Prop.x), max(plot_count$Prop.x)),
+                ylim = c(min(plot_count$Prop.y), max(plot_count$Prop.y))) +
     geom_density2d() +
     ylab("Proportion of spacers targeting plasmids") +
     xlab("Proportion of spacers targeting phages") +
@@ -81,17 +84,6 @@ p <- ggplot(plot_count, aes(Prop.x, Prop.y, color = Source_Type.x)) +
     scale_x_log10(labels = scales::percent) +
     scale_y_log10(labels = scales::percent) +
     scale_color_manual(name = "Source", values = c("blue2", "red2"))+
-    theme(legend.position = c(0.18,0.85))
+    theme(legend.position = c(0.22,0.85)) 
 p
 ggsave(p, file = "Figures/Fig3_density.pdf", width = 11, height = 9, units = "cm")
-
-p <- ggplot(plot_count, aes(Prop.x, Prop.y, color = Source_Type.x)) +
-    theme_bw() +
-    geom_density2d() +
-    ylab("Proportion of spacers targeting plasmids") +
-    xlab("Proportion of spacers targeting phages") +
-    scale_color_manual(name = "Source", values = c("blue2", "red2"))+
-    theme(legend.position = c(0.80,0.85)) +
-    coord_cartesian(ylim = c(0,0.22), xlim = c(0,0.22))
-p
-ggsave(p, file = "Figures/Fig3_density_no_log.pdf", width = 11, height = 9, units = "cm")
