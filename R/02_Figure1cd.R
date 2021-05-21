@@ -8,7 +8,12 @@ load("Prepared.RData")
 plasmid_count <- table(all_plasmids[all_plasmids$Derep, "Class"])
 host_count <- table(all_hosts[all_hosts$Derep, "Class"])
 
-cris_and_cas_plasmid <- rbind(cas_plasmid[, c("Acc", "Prediction", "Cell")], cris_plasmid[, c("Acc", "Prediction", "Cell")])
+cas_plasmid <- cas_plasmid[, c("Acc", "Prediction", "Cell")]
+cris_plasmid <- cris_plasmid[, c("Acc", "Subtype", "Cell", "Prediction")]
+cris_plasmid <- cris_plasmid[is.na(cris_plasmid$Prediction), ]
+cris_plasmid[is.na(cris_plasmid$Subtype), "Subtype"] <- "Ambiguous"
+cris_plasmid$Prediction <- cris_plasmid$Subtype
+cris_and_cas_plasmid <- rbind(cas_plasmid, cris_plasmid[, c("Acc", "Prediction", "Cell")])
 cris_and_cas_plasmid <- merge(cris_and_cas_plasmid, tax, by = "Cell")
 cris_and_cas_plasmid$Prediction <- ifelse(is.na(cris_and_cas_plasmid$Prediction), "Other", as.character(cris_and_cas_plasmid$Prediction))
 cris_and_cas_plasmid$Prediction <- ifelse(grepl("Hybrid|Ambiguous", cris_and_cas_plasmid$Prediction), "Other", cris_and_cas_plasmid$Prediction)
@@ -19,7 +24,12 @@ prev_plasmid_ClassP <- aggregate(Acc ~ Class + Prediction, cris_and_cas_plasmid,
 prev_plasmid_ClassP <- merge(prev_plasmid_ClassP, data.frame(plasmid_count), by.x = "Class", by.y = "Var1")
 prev_plasmid_ClassP$Fraction <- prev_plasmid_ClassP$Acc / prev_plasmid_ClassP$Freq
 
-cris_and_cas_host <- rbind(cas_host[, c("Acc", "Prediction", "Cell")], cris_host[, c("Acc", "Prediction", "Cell")])
+cas_host <- cas_host[, c("Acc", "Prediction", "Cell")]
+cris_host <- cris_host[, c("Acc", "Subtype", "Cell", "Prediction")]
+cris_host <- cris_host[is.na(cris_host$Prediction), ]
+cris_host[is.na(cris_host$Subtype), "Subtype"] <- "Ambiguous"
+cris_host$Prediction <- cris_host$Subtype
+cris_and_cas_host <- rbind(cas_host, cris_host[, c("Acc", "Prediction", "Cell")])
 cris_and_cas_host <- merge(cris_and_cas_host, tax, by = "Cell")
 cris_and_cas_host$Prediction <- ifelse(is.na(cris_and_cas_host$Prediction), "Other", as.character(cris_and_cas_host$Prediction))
 cris_and_cas_host$Prediction <- ifelse(grepl("Hybrid|Ambiguous", cris_and_cas_host$Prediction), "Other", cris_and_cas_host$Prediction)

@@ -51,23 +51,19 @@ dereps <- gsub("\\.[0-9]*$", "", c(as.character(all_plasmids[all_plasmids$Derep,
 all_spacers <- all_spacers[all_spacers$Source %in% dereps &
                                (all_spacers$Target %in% dereps | all_spacers$Target_Type == "Phage"), ]
 
-# Aggregate
-all_spacers_agg <- aggregate(Spacer ~ Source + Target + Source_Type + Target_Type, data = all_spacers, function(x) length(unique(x)))
-colnames(all_spacers_agg)[ncol(all_spacers_agg)] <- "Spacers"
+# Remove those from untyped orphans
+orphans <- c(as.character(cris_plasmid[is.na(cris_plasmid$Prediction) & is.na(cris_plasmid$Subtype), "CRISPR"]),
+             as.character(cris_host[is.na(cris_host$Prediction) & is.na(cris_host$Subtype), "CRISPR"]))
 
-# Write plasmid target count table
-plas_count <- all_spacers_agg[all_spacers_agg$Source_Type == "Plasmid", ]
-all_plasmids$Acc <- gsub("\\.[0-9]*$", "", all_plasmids$Acc)
-plas_count <- merge(plas_count, all_plasmids[, c("Acc", "Cell")], by.x = "Source", by.y = "Acc", all.x = TRUE)
-plas_count <- merge(plas_count, all_plasmids[, c("Acc", "Cell")], by.x = "Target", by.y = "Acc", all.x = TRUE)
-plas_count[!is.na(plas_count$Cell.x) & !is.na(plas_count$Cell.y) & 
-               plas_count$Cell.x == plas_count$Cell.y, "Target_Type"] <- "Plasmid_in_Cell"
-plas_count[plas_count$Source == plas_count$Target, "Target_Type"] <- "Self"
+all_spacers <- all_spacers[!gsub("@[0-9]*$", "", all_spacers$Spacer) %in% orphans, ]
 
-plas_count <- aggregate(Target ~ Source + Target_Type, data = plas_count, function(x) length(unique(x)))
-pl_many_cast <- reshape2::dcast(plas_count, Source~Target_Type, value.var = "Target", fill = 0)
+# Total spacers
+sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
+sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] - 1)
 
-write.table(pl_many_cast, file = "Tables/Plasmid_target_count.tab", row.names = FALSE, quote = FALSE, sep = "\t")
+# Type IV spacers
+sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans & grepl("IV-", cris_plasmid$Prediction), "Repeats"] - 1) /
+sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
 
 # Only count spacers once in each target group (CRISPR is used as a stand-in variable for de-replicating)
 all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Target_Type, data = all_spacers, function(x) 1)
@@ -75,6 +71,15 @@ all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Target_Type, data =
 pl_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Plasmid" & all_spacers_unq$Target_Type != "Self", ]
 hs_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Chromosome", ]
 
+# Percent match
+nrow(pl_spacers_unq) / sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
+nrow(hs_spacers_unq) / sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] - 1)
+
+# Type IV matches
+nrow(pl_spacers_unq[gsub("@[0-9]*$", "", pl_spacers_unq$Spacer) %in% cris_plasmid[!cris_plasmid$CRISPR %in% orphans & 
+                                      grepl("IV-", cris_plasmid$Prediction), "CRISPR"], ]) / nrow(pl_spacers_unq)
+
+# Plot
 pdf(file = "Figures/Fig3_plasmid_euler.pdf", width = 6, height = 4)
 plot(euler(list(Phage = pl_spacers_unq[pl_spacers_unq$Target_Type == "Phage", "Spacer"],
                 Plasmid = pl_spacers_unq[pl_spacers_unq$Target_Type == "Plasmid", "Spacer"])),
@@ -107,8 +112,8 @@ all_spacers_unq_type <- aggregate(Spacer ~ SubType_final + Source_Type + Target_
 pl_types <- aggregate(Spacer ~ SubType_final, all_spacers_unq_type[all_spacers_unq_type$Source_Type == "Plasmid", ], sum)
 hs_types <- aggregate(Spacer ~ SubType_final, all_spacers_unq_type[all_spacers_unq_type$Source_Type == "Chromosome", ], sum)
 
-types <- union(pl_types[rev(order(pl_types$Spacer)), "SubType_final"][1:8],
-          hs_types[rev(order(hs_types$Spacer)), "SubType_final"][1:8])
+types <- union(pl_types[rev(order(pl_types$Spacer)), "SubType_final"][1:6],
+          hs_types[rev(order(hs_types$Spacer)), "SubType_final"][1:6])
 
 all_spacers_unq_type$SubType <- ifelse(all_spacers_unq_type$SubType_final %in% types, all_spacers_unq_type$SubType_final, "Other")
 all_spacers_unq_type$SubType <- relevel(as.factor(all_spacers_unq_type$SubType), "Other")
@@ -131,8 +136,8 @@ all_spacers_unq_class <- aggregate(Spacer ~ Class + Source_Type + Target_Type, d
 pl_class <- aggregate(Spacer ~ Class, all_spacers_unq_class[all_spacers_unq_class$Source_Type == "Plasmid", ], sum)
 hs_class <- aggregate(Spacer ~ Class, all_spacers_unq_class[all_spacers_unq_class$Source_Type == "Chromosome", ], sum)
 
-classes <- union(pl_class[rev(order(pl_class$Spacer)), "Class"][1:8],
-               pl_class[rev(order(pl_class$Spacer)), "Class"][1:8])
+classes <- union(pl_class[rev(order(pl_class$Spacer)), "Class"][1:6],
+               pl_class[rev(order(pl_class$Spacer)), "Class"][1:6])
 
 all_spacers_unq_class$Classes <- ifelse(all_spacers_unq_class$Class %in% classes, as.character(all_spacers_unq_class$Class), "Other")
 all_spacers_unq_class$Classes <- relevel(as.factor(all_spacers_unq_class$Classes), "Other")

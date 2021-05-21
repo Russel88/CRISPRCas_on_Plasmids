@@ -1,4 +1,3 @@
-library(eulerr)
 library(ggplot2)
 
 load("Prepared.RData")
@@ -54,23 +53,12 @@ all_spacers <- all_spacers[all_spacers$Source %in% dereps &
 # Aggregate
 all_spacers_agg <- aggregate(Spacer ~ Source + Target + Source_Type + Target_Type, data = all_spacers, function(x) length(unique(x)))
 
-# Target count
-phage_count <- aggregate(Target_Type ~ Source + Source_Type, all_spacers_agg, function(x) length(x[x=="Phage"]))
-plasmid_count <- aggregate(Target_Type ~ Source + Source_Type, all_spacers_agg, function(x) length(x[x=="Plasmid"]))
+pl_spacers_agg <- all_spacers_agg[all_spacers_agg$Target_Type == "Plasmid", ]
+all_plasmids$Acc2 <- gsub(".[0-9]*$", "", all_plasmids$Acc)
 
-# Should not be counts, but percentage of all spacers matching phage or plasmid
+pl_spacers_agg <- merge(pl_spacers_agg, all_plasmids[, c("CRISPRs", "Acc2")], by.x = "Target", by.y = "Acc2")
 
+mat <- with(pl_spacers_agg, table(Source_Type, CRISPRs > 0))
+mat / rowSums(mat)
 
-match_count <- merge(plasmid_count, phage_count, by = "Source")
-match_count <- match_count[match_count$Target_Type.y < 1000, ]
-
-p <- ggplot(match_count, aes(Target_Type.y+1, Target_Type.x+1)) +
-    theme_bw() +
-    geom_density2d() +
-    facet_grid(~Source_Type.x) +
-    ylab("Plasmid targets") +
-    xlab("Phage targets") +
-    scale_y_log10() +
-    scale_x_log10() +
-    coord_equal()
-p
+nrow(all_plasmids[all_plasmids$Derep & all_plasmids$CRISPRs > 0, ]) / sum(all_plasmids$Derep)
