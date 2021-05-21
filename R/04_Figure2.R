@@ -44,7 +44,7 @@ p <- ggplot(all_plasmids, aes(Length, fill = Group)) +
     facet_grid(Group ~ ., scales = "free") +
     theme(legend.position = "none")
 p
-ggsave(p, file = "Figures/Fig2_size2.pdf", width = 8, height = 16, units = "cm")
+ggsave(p, file = "Figures/Fig2_size.pdf", width = 8, height = 16, units = "cm")
 write.csv(all_plasmids[, c("Group", "Length")], file = "Tables/Fig2_size2.csv", quote = FALSE, row.names = FALSE)
 
 # Mobility

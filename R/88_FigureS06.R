@@ -77,3 +77,26 @@ pheatmap::pheatmap(prev_mat,
                    filename = "Figures/Fig1_heatmap_direct.pdf",
                    width = 8,
                    height = 4.5)
+
+# Stats
+plasmid_subtypes <- reshape2::dcast(Acc ~ Prediction, data = cris_and_cas_plasmid)
+host_subtypes <- reshape2::dcast(Acc ~ Prediction, data = cris_and_cas_host)
+missing_host <- colnames(plasmid_subtypes)[!colnames(plasmid_subtypes) %in% colnames(host_subtypes)]
+missing_plasmid <- colnames(host_subtypes)[!colnames(host_subtypes) %in% colnames(plasmid_subtypes)]
+for(i in missing_host){
+    host_subtypes[, i] <- 0
+}
+for(i in missing_plasmid){
+    plasmid_subtypes[, i] <- 0
+}
+plasmid_subtypes <- plasmid_subtypes[, order(colnames(plasmid_subtypes))]
+host_subtypes <- host_subtypes[, order(colnames(host_subtypes))]
+
+mat_subtypes <- rbind(plasmid_subtypes, host_subtypes)
+group <- c(rep("Plasmid", nrow(plasmid_subtypes)), rep("Chromosome", nrow(host_subtypes)))
+
+library(indicspecies)
+
+set.seed(42)
+indval <- multipatt(mat_subtypes[, -1], group, control = how(nperm=9999), func = "IndVal")
+summary(indval, alpha = 0.05/(ncol(mat_subtypes)-1))

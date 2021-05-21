@@ -91,3 +91,22 @@ p <- ggplot(criscas_a[criscas_a$Origin == "Chromosome", ], aes(SubType, Type, si
     scale_color_manual(values = c("grey", "cyan", "gold", "purple", "red2", "blue2", "green2"))
 p
 ggsave(p, file = "Figures/Fig1_subtypes_hs_direct.pdf", width = 12, height = 9, units = "cm")
+
+# Bar
+criscas_agg <- aggregate(Acc ~ Prediction + Origin, data = criscas, function(x) sum(!is.na(x)))
+criscas_aggT <- aggregate(Acc ~ Origin, data = criscas, function(x) sum(!is.na(x)))
+criscas_agg <- merge(criscas_agg, criscas_aggT, by = "Origin")
+criscas_agg$Perc <- criscas_agg$Acc.x / criscas_agg$Acc.y
+
+criscas_agg$Prediction <- as.factor(criscas_agg$Prediction)
+criscas_agg$Prediction <- factor(criscas_agg$Prediction, levels = rev(levels(criscas_agg$Prediction)))
+criscas_agg$Prediction <- relevel(criscas_agg$Prediction, "Other")
+
+p <- ggplot(criscas_agg, aes(Prediction, Acc.x, fill = Origin)) +
+    theme_bw() +
+    geom_bar(stat = "identity", position = position_dodge(0.5, preserve = "single"), width = 0.5) +
+    coord_flip() +
+    ylab("#") +
+    xlab("Subtype")
+p
+ggsave(p, file = "Figures/Fig1_subtypes_direct_bar.pdf", width = 12, height = 12, units = "cm")
