@@ -20,6 +20,6 @@ This is the code repository for reproducing analyses in the paper:
 * CRISPRCas
 
 # Software
-* See conda_*.yml files for most software
+* See Conda/*.yml files for most software
 * BLAST 2.8.1+
 * CRISPRCasFinder 4.2.17
