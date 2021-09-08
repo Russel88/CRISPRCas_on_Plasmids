@@ -24,11 +24,6 @@ summary(glm.nb(Repeats ~ is.na(Operon), data = cris_plasmid[cris_plasmid$Derep, 
 sum(grepl("Cas[12]_", cas_plasmid$Genes)) / nrow(cas_plasmid)
 sum(grepl("Cas[12]_", cas_host$Genes)) / nrow(cas_host)
 
-adapt_p <- table(cas_plasmid[grepl("Cas[12]", cas_plasmid$Prediction), "Adaptation"] == "0%")
-adapt_h <- table(cas_host[grepl("^I-", cas_host$Prediction), "Adaptation"] == "0%")
-adapt_p[1] / sum(adapt_p)
-adapt_h[1] / sum(adapt_h)
-
 # Multiple CRISPRs
 mult_p <- table(all_plasmids[all_plasmids$Derep, "CRISPRs"])
 mult_h <- table(all_hosts[all_hosts$Derep, "CRISPRs"])
@@ -50,4 +45,5 @@ mean(grepl("Inc|Col", all_plasmids[all_plasmids$Derep, "Inc"]))
 
 table(grepl("Inc|Col", all_plasmids[all_plasmids$Derep, "Inc"]),
       all_plasmids[all_plasmids$Derep, "Phylum"] == "Proteobacteria")
+
 
