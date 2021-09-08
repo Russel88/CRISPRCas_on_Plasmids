@@ -39,6 +39,9 @@ orphans <- c(as.character(cris_plasmid[is.na(cris_plasmid$Prediction) & is.na(cr
 
 all_spacers <- all_spacers[!gsub("@[0-9]*$", "", all_spacers$Spacer) %in% orphans, ]
 
+# Remove mini-arrays
+all_spacers <- all_spacers[all_spacers$CRISPR %in% c(as.character(cris_plasmid$CRISPR), as.character(cris_host$CRISPR)), ]
+
 # Aggregate
 all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Source + Target, data = all_spacers, function(x) 1)
 

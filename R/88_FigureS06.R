@@ -57,7 +57,7 @@ prev_host_ClassP$Pair <- paste(prev_host_ClassP$Class, prev_host_ClassP$Predicti
 prev_all <- merge(prev_plasmid_ClassP, prev_host_ClassP, by = "Pair", all = TRUE)
 prev_all[is.na(prev_all$Fraction.x), "Fraction.x"] <- 0
 prev_all[is.na(prev_all$Fraction.y), "Fraction.y"] <- 0
-prev_all$Diff <- (prev_all$Fraction.x) - (prev_all$Fraction.y)
+prev_all$Diff <- log2((prev_all$Fraction.x) / (prev_all$Fraction.y))
 prev_all$Class <- ifelse(is.na(prev_all$Class.x), as.character(prev_all$Class.y), as.character(prev_all$Class.x))
 prev_all$Prediction <- ifelse(is.na(prev_all$Prediction.x), prev_all$Prediction.y, prev_all$Prediction.x)
 
@@ -67,16 +67,25 @@ prev_mat <- prev_mat[, -1]
 
 prev_mat <- prev_mat[, colnames(prev_mat)[c(1:19,21:23,20)]]
 
+min(unlist(prev_mat)[is.finite(unlist(prev_mat))], na.rm = TRUE)
+max(unlist(prev_mat)[is.finite(unlist(prev_mat))], na.rm = TRUE)
+
+prev_mat[prev_mat == -Inf] <- -7
+prev_mat[prev_mat == Inf] <- 3
+
+prev_mat <- rbind(prev_mat[!rownames(prev_mat) == "Halobacteria", ],
+                  prev_mat[rownames(prev_mat) == "Halobacteria", ])
+
 pheatmap::pheatmap(prev_mat,
                    cluster_cols = FALSE,
                    cluster_rows = FALSE,
-                   color = c("blue4","blue2","cyan3","cyan","lightblue","red", "red4"),
-                   breaks = c(-0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1),
+                   color = c("darkblue","blue3","blue","cyan4","cyan3","cyan","grey","grey","pink","darkred"),
+                   breaks = seq(-7, 3, 1),
                    na_col = "white",
                    gaps_col = c(8,10,14,19,21,22),
-                   filename = "Figures/Fig1_heatmap_direct.pdf",
                    width = 8,
-                   height = 4.5)
+                   height = 4.5,
+                   filename = "Figures/Fig1_heatmap_direct.pdf")
 
 # Stats
 plasmid_subtypes <- reshape2::dcast(Acc ~ Prediction, data = cris_and_cas_plasmid)

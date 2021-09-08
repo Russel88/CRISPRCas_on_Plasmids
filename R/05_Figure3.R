@@ -39,6 +39,9 @@ all_spacers <- rbind(pl_pl[, c("Spacer", "Target", "Source_Type", "Target_Type")
                      hs_pl[, c("Spacer", "Target", "Source_Type", "Target_Type")], 
                      hs_ph[, c("Spacer", "Target", "Source_Type", "Target_Type")])
 
+derep <- read.table("../Collect/derep_spacers.tab")
+all_spacers <- all_spacers[all_spacers$Spacer %in% derep$V1, ]
+
 # Get Focal names
 all_spacers$CRISPR <- gsub("@.*", "", all_spacers$Spacer)
 all_spacers$Source <- gsub("[._-][-,0-9]*$", "", all_spacers$CRISPR)
@@ -71,6 +74,13 @@ all_spacers_unq <- aggregate(CRISPR ~ Spacer + Source_Type + Target_Type, data =
 pl_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Plasmid" & all_spacers_unq$Target_Type != "Self", ]
 hs_spacers_unq <- all_spacers_unq[all_spacers_unq$Source_Type == "Chromosome", ]
 
+# Remove mini-arrays
+pl_spacers_unq$CRISPR <- gsub("@[0-9]*$", "", pl_spacers_unq$Spacer)
+hs_spacers_unq$CRISPR <- gsub("@[0-9]*$", "", hs_spacers_unq$Spacer)
+
+pl_spacers_unq <- pl_spacers_unq[pl_spacers_unq$CRISPR %in% cris_plasmid$CRISPR, ]
+hs_spacers_unq <- hs_spacers_unq[hs_spacers_unq$CRISPR %in% cris_host$CRISPR, ]
+
 # Percent match
 nrow(pl_spacers_unq) / sum(cris_plasmid[!cris_plasmid$CRISPR %in% orphans, "Repeats"] - 1)
 nrow(hs_spacers_unq) / sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] - 1)
@@ -78,6 +88,18 @@ nrow(hs_spacers_unq) / sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] 
 # Type IV matches
 nrow(pl_spacers_unq[gsub("@[0-9]*$", "", pl_spacers_unq$Spacer) %in% cris_plasmid[!cris_plasmid$CRISPR %in% orphans & 
                                       grepl("IV-", cris_plasmid$Prediction), "CRISPR"], ]) / nrow(pl_spacers_unq)
+
+# Matches within cell
+pl_spacers_unq2 <- aggregate(CRISPR ~ Source + Target, data = all_spacers[all_spacers$Source_Type == "Plasmid" & all_spacers$Target_Type == "Plasmid", ], function(x) 1)
+cell_info <- all_plasmids[all_plasmids$Derep, c("Acc", "Cell")]
+cell_info$Acc <- gsub(".[0-9]*$", "", cell_info$Acc)
+
+pl_spacers_unq2 <- merge(pl_spacers_unq2, cell_info, by.x = "Source", by.y = "Acc")
+pl_spacers_unq2 <- merge(pl_spacers_unq2, cell_info, by.x = "Target", by.y = "Acc")
+
+pl_spacers_unq2 <- pl_spacers_unq2[pl_spacers_unq2$Target != pl_spacers_unq2$Source, ]
+pl_spacers_unq2 <- pl_spacers_unq2[!is.na(pl_spacers_unq2$Cell.x) & !is.na(pl_spacers_unq2$Cell.y), ]
+sum(pl_spacers_unq2$Cell.x == pl_spacers_unq2$Cell.y)
 
 # Plot
 pdf(file = "Figures/Fig3_plasmid_euler.pdf", width = 6, height = 4)
@@ -113,10 +135,12 @@ pl_types <- aggregate(Spacer ~ SubType_final, all_spacers_unq_type[all_spacers_u
 hs_types <- aggregate(Spacer ~ SubType_final, all_spacers_unq_type[all_spacers_unq_type$Source_Type == "Chromosome", ], sum)
 
 types <- union(pl_types[rev(order(pl_types$Spacer)), "SubType_final"][1:6],
-          hs_types[rev(order(hs_types$Spacer)), "SubType_final"][1:6])
+               hs_types[rev(order(hs_types$Spacer)), "SubType_final"][1:6])
 
 all_spacers_unq_type$SubType <- ifelse(all_spacers_unq_type$SubType_final %in% types, all_spacers_unq_type$SubType_final, "Other")
-all_spacers_unq_type$SubType <- relevel(as.factor(all_spacers_unq_type$SubType), "Other")
+all_spacers_unq_type$SubType <- as.factor(all_spacers_unq_type$SubType)
+all_spacers_unq_type$SubType <- factor(all_spacers_unq_type$SubType, levels = rev(levels(all_spacers_unq_type$SubType)))
+all_spacers_unq_type$SubType <- relevel(all_spacers_unq_type$SubType, "Other")
 
 p <- ggplot(all_spacers_unq_type, aes(SubType, Spacer, fill = Target_Type)) +
     theme_bw() +
@@ -140,7 +164,9 @@ classes <- union(pl_class[rev(order(pl_class$Spacer)), "Class"][1:6],
                pl_class[rev(order(pl_class$Spacer)), "Class"][1:6])
 
 all_spacers_unq_class$Classes <- ifelse(all_spacers_unq_class$Class %in% classes, as.character(all_spacers_unq_class$Class), "Other")
-all_spacers_unq_class$Classes <- relevel(as.factor(all_spacers_unq_class$Classes), "Other")
+all_spacers_unq_class$Classes <- as.factor(all_spacers_unq_class$Classes)
+all_spacers_unq_class$Classes <- factor(all_spacers_unq_class$Classes, levels = rev(levels(all_spacers_unq_class$Classes)))
+all_spacers_unq_class$Classes <- relevel(all_spacers_unq_class$Classes, "Other")
 
 p <- ggplot(all_spacers_unq_class, aes(Classes, Spacer, fill = Target_Type)) +
     theme_bw() +

@@ -56,6 +56,8 @@ n <- table(proteo_plasmids$Group)
 proteo_plasmids$Group <- factor(proteo_plasmids$Group, 
                                 labels = paste0(levels(proteo_plasmids$Group), "\n(n=", n[levels(proteo_plasmids$Group)], ")"))
 
+with(proteo_plasmids, table(Group, Mobility))
+
 p <- ggplot(proteo_plasmids, aes(Group, fill = Mobility)) +
     theme_bw() +
     geom_bar(position = "fill") +
@@ -69,20 +71,8 @@ ggsave(p, file = "Figures/Fig2_mobility.pdf", width = 16, height = 5, units = "c
 write.csv(proteo_plasmids[, c("Group", "Mobility")], file = "Tables/Fig2_mobility.csv", quote = FALSE, row.names = FALSE)
 
 # Model
-proteo_plasmids$LLength <- log10(proteo_plasmids$Length)
-proteo_plasmids$MobilityBin <- (proteo_plasmids$Mobility == "Conjugative")*1
-
-fit <- glm(MobilityBin ~ LLength, data = proteo_plasmids, family = "binomial")
-proteo_plasmids$MobilityOdds <- predict(fit,type = "response")
-
-obs_ods <- fisher.test(proteo_plasmids$CRISPRCas > 0, proteo_plasmids$Mobility == "Conjugative")$estimate
-
-set.seed(42)
-randoms <- lapply(1:1000, function(y) rbinom(nrow(proteo_plasmids), 1, prob = proteo_plasmids$MobilityOdds))
-rand_ods <- sapply(randoms, function(x) fisher.test(proteo_plasmids$CRISPRCas > 0, x == 1)$estimate)
-
-sum(obs_ods >= rand_ods) / length(rand_ods)
-hist(rand_ods)
+fisher.test(proteo_plasmids[!grepl("Orphan", proteo_plasmids$Group), "Mobility"],
+            as.character(proteo_plasmids[!grepl("Orphan", proteo_plasmids$Group), "Group"]))
 
 # Inc
 inc_plasmids$CRISPRorCas <- inc_plasmids$CRISPRs > 0 | inc_plasmids$Cas > 0
@@ -170,3 +160,6 @@ p <- ggplot(merge_inc, aes(Var1, Perc)) +
     ylab("Proportion with CRISPR or Cas loci")
 p
 ggsave(p, file = "Figures/Fig2_inc.pdf", width = 12, height = 9, units = "cm")
+
+cas_plasmid_inc <- merge(cas_plasmid, inc_plasmids[, c("Acc", "Inc")], by = "Acc")
+table(as.character(cas_plasmid_inc$Prediction), as.character(cas_plasmid_inc$Inc))

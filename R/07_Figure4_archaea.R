@@ -8,8 +8,10 @@ colnames(pl_pl) <- c("Spacer", "Target", "TStart", "TEnd", "ORF")
 # Get Focal names
 pl_pl$CRISPR <- gsub("@.*", "", pl_pl$Spacer)
 pl_pl$Source <- gsub("[._-][-,0-9]*$", "", pl_pl$CRISPR)
-
 pl_pl$Target <- gsub("\\.[0-9]*$", "", pl_pl$Target)
+
+# Remove mini-arrays
+pl_pl <- pl_pl[pl_pl$CRISPR %in% pl_pl$CRISPR, ]
 
 # Aggregate
 pl_pl_agg <- aggregate(ORF ~ Source + Target, data = pl_pl, function(x) sum(!is.na(x)))

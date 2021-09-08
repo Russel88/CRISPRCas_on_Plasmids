@@ -12,6 +12,8 @@ unique(all_plasmids$Genus)
 mean(apply(all_hosts[all_hosts$Derep & !is.na(all_hosts$Kingdom) & all_hosts$Kingdom != "Archaea", c("CRISPRs", "Cas")], 1, sum) > 0)
 mean(apply(all_hosts[all_hosts$Derep & !is.na(all_hosts$Kingdom) & all_hosts$Kingdom == "Archaea", c("CRISPRs", "Cas")], 1, sum) > 0)
 
+mean(apply(all_hosts[all_hosts$Derep, c("CRISPRs", "Cas")], 1, sum) > 0)
+
 # CRISPR length - orphan/non-orphan
 agg <- aggregate(Repeats ~ is.na(Operon), data = cris_plasmid[cris_plasmid$Derep, c("Repeats", "Operon")], mean)
 agg[2,2] / agg[1,2]

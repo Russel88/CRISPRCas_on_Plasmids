@@ -8,8 +8,10 @@ colnames(pl_pl) <- c("Spacer", "Target", "TStart", "TEnd", "ORF")
 # Get Focal names
 pl_pl$CRISPR <- gsub("@.*", "", pl_pl$Spacer)
 pl_pl$Source <- gsub("[._-][-,0-9]*$", "", pl_pl$CRISPR)
-
 pl_pl$Target <- gsub("\\.[0-9]*$", "", pl_pl$Target)
+
+# Remove mini-arrays
+pl_pl <- pl_pl[pl_pl$CRISPR %in% cris_plasmid$CRISPR, ]
 
 # Aggregate
 pl_pl_agg <- aggregate(ORF ~ Source + Target, data = pl_pl, function(x) sum(!is.na(x)))
@@ -20,9 +22,7 @@ selfs <- nrow(pl_pl_agg[pl_pl_agg$Source == pl_pl_agg$Target, ])
 pl_pl_agg <- pl_pl_agg[pl_pl_agg$Source != pl_pl_agg$Target, ]
 
 # Cross-targeting pairs
-(sum(paste(pl_pl_agg$Source, pl_pl_agg$Target) %in% paste(pl_pl_agg$Target, pl_pl_agg$Source)) - selfs) / 2
 crosstarget <- pl_pl_agg[which(paste(pl_pl_agg$Source, pl_pl_agg$Target) %in% paste(pl_pl_agg$Target, pl_pl_agg$Source)), ]
-write.table(crosstarget, file = "Tables/crosstarget.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 # Get nodes
 nodes <- unique(c(pl_pl_agg$Source, pl_pl_agg$Target))
