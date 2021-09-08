@@ -3,8 +3,8 @@
 # Download IMGVR database from homepage
 
 # Get reference phages
-#awk -F'\t' '$10 == "Reference" {print $1}' IMGVR_all_Sequence_information.tsv > IMG_refs
-#perl -ne 'if(/^>(\S+)/){$c=$i{$1}}$c?print:chomp;$i{$_}=1 if @ARGV' IMG_refs IMGVR_all_nucleotides.fna > IMGVR_refs_nucleotides.fna
+awk -F'\t' '$10 == "Reference" {print $1}' IMGVR_all_Sequence_information.tsv > IMG_refs
+perl -ne 'if(/^>(\S+)/){$c=$i{$1}}$c?print:chomp;$i{$_}=1 if @ARGV' IMG_refs IMGVR_all_nucleotides.fna > IMGVR_refs_nucleotides.fna
 
 # Split spacers in chunks
 mkdir PLSDB_spacers
