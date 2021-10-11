@@ -1,7 +1,7 @@
 # CRISPR-Cas on Plasmids
 This is the code repository for reproducing analyses in the paper:
 
-[CRISPR-Cas systems are widespread accessory elements across bacterial and archaeal plasmids](https://doi.org/10.1101/2021.06.04.447074)
+[CRISPR-Cas systems are widespread accessory elements across bacterial and archaeal plasmids](https://doi.org/10.1093/nar/gkab859)
 
 # Software
 * See Conda/*.yml files for most software
