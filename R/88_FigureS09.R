@@ -39,6 +39,9 @@ all_spacers <- rbind(pl_pl[, c("Spacer", "Target", "Source_Type", "Target_Type")
                      hs_pl[, c("Spacer", "Target", "Source_Type", "Target_Type")], 
                      hs_ph[, c("Spacer", "Target", "Source_Type", "Target_Type")])
 
+#derep <- read.table("../Collect/derep.tab")
+#all_spacers <- all_spacers[all_spacers$Spacer %in% derep$V1, ]
+
 # Get Focal names
 all_spacers$CRISPR <- gsub("@.*", "", all_spacers$Spacer)
 all_spacers$Source <- gsub("[._-][-,0-9]*$", "", all_spacers$CRISPR)
@@ -75,6 +78,13 @@ sum(cris_host[!cris_host$CRISPR %in% orphans, "Repeats"] - 1)
 # Subset direct
 pl_spacers_unq <- pl_spacers_unq[gsub("@[0-9]*$", "", pl_spacers_unq$Spacer) %in% cris_plasmid$CRISPR, ]
 hs_spacers_unq <- hs_spacers_unq[gsub("@[0-9]*$", "", hs_spacers_unq$Spacer) %in% cris_host$CRISPR, ]
+
+# Remove mini-arrays
+pl_spacers_unq$CRISPR <- gsub("@[0-9]*$", "", pl_spacers_unq$Spacer)
+hs_spacers_unq$CRISPR <- gsub("@[0-9]*$", "", hs_spacers_unq$Spacer)
+
+pl_spacers_unq <- pl_spacers_unq[pl_spacers_unq$CRISPR %in% cris_plasmid$CRISPR, ]
+hs_spacers_unq <- hs_spacers_unq[hs_spacers_unq$CRISPR %in% cris_host$CRISPR, ]
 
 # Plot
 pdf(file = "Figures/Fig3_plasmid_euler_direct.pdf", width = 6, height = 4)
@@ -113,7 +123,9 @@ types <- union(pl_types[rev(order(pl_types$Spacer)), "SubType_final"][1:6],
           hs_types[rev(order(hs_types$Spacer)), "SubType_final"][1:6])
 
 all_spacers_unq_type$SubType <- ifelse(all_spacers_unq_type$SubType_final %in% types, all_spacers_unq_type$SubType_final, "Other")
-all_spacers_unq_type$SubType <- relevel(as.factor(all_spacers_unq_type$SubType), "Other")
+all_spacers_unq_type$SubType <- as.factor(all_spacers_unq_type$SubType)
+all_spacers_unq_type$SubType <- factor(all_spacers_unq_type$SubType, levels = rev(levels(all_spacers_unq_type$SubType)))
+all_spacers_unq_type$SubType <- relevel(all_spacers_unq_type$SubType, "Other")
 
 p <- ggplot(all_spacers_unq_type, aes(SubType, Spacer, fill = Target_Type)) +
     theme_bw() +
@@ -137,7 +149,9 @@ classes <- union(pl_class[rev(order(pl_class$Spacer)), "Class"][1:6],
                pl_class[rev(order(pl_class$Spacer)), "Class"][1:6])
 
 all_spacers_unq_class$Classes <- ifelse(all_spacers_unq_class$Class %in% classes, as.character(all_spacers_unq_class$Class), "Other")
-all_spacers_unq_class$Classes <- relevel(as.factor(all_spacers_unq_class$Classes), "Other")
+all_spacers_unq_class$Classes <- as.factor(all_spacers_unq_class$Classes)
+all_spacers_unq_class$Classes <- factor(all_spacers_unq_class$Classes, levels = rev(levels(all_spacers_unq_class$Classes)))
+all_spacers_unq_class$Classes <- relevel(all_spacers_unq_class$Classes, "Other")
 
 p <- ggplot(all_spacers_unq_class, aes(Classes, Spacer, fill = Target_Type)) +
     theme_bw() +

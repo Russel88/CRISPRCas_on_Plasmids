@@ -44,7 +44,7 @@ all_spacers$CRISPR <- gsub("@.*", "", all_spacers$Spacer)
 all_spacers$Source <- gsub("[._-][-,0-9]*$", "", all_spacers$CRISPR)
 all_spacers$Target <- gsub("\\.[0-9]*$", "", all_spacers$Target)
 
-all_spacers[all_spacers$Source == all_spacers$Target, "Target_Type"] <- "Self"
+all_spacers <- all_spacers[all_spacers$Source != all_spacers$Target, ]
 
 # Derep
 dereps <- gsub("\\.[0-9]*$", "", c(as.character(all_plasmids[all_plasmids$Derep, "Acc"]), as.character(all_hosts[all_hosts$Derep, "Acc"])))
@@ -56,6 +56,9 @@ orphans <- c(as.character(cris_plasmid[is.na(cris_plasmid$Prediction) & is.na(cr
              as.character(cris_host[is.na(cris_host$Prediction) & is.na(cris_host$Subtype), "CRISPR"]))
 
 all_spacers <- all_spacers[!gsub("@[0-9]*$", "", all_spacers$Spacer) %in% orphans, ]
+
+# Remove mini-arrays
+all_spacers <- all_spacers[all_spacers$CRISPR %in% c(as.character(cris_plasmid$CRISPR), as.character(cris_host$CRISPR)), ]
 
 # Aggregate
 all_spacers_agg <- aggregate(Spacer ~ Source + Target + Source_Type + Target_Type, data = all_spacers, function(x) length(unique(x)))

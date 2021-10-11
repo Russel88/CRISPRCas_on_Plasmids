@@ -67,7 +67,19 @@ cris_plasmid$Origin <- "Plasmid"
 cris_host$Origin <- "Chromosome"
 
 cris <- rbind(cris_plasmid, cris_host)
-all_spacers_merged <- merge(all_spacers_unq, cris, by = "CRISPR", all.y = TRUE)
+
+cris_target_pl <- cris
+cris_target_ph <- cris
+
+cris_target_pl$Target_Type <- "Plasmid"
+cris_target_ph$Target_Type <- "Phage"
+
+cris_target <- rbind(cris_target_pl, cris_target_ph)
+
+cris_target$Merge <- paste(cris_target$CRISPR, cris_target$Target_Type)
+all_spacers_unq$Merge <- paste(all_spacers_unq$CRISPR, all_spacers_unq$Target_Type)
+
+all_spacers_merged <- merge(all_spacers_unq, cris_target, by = "Merge", all = TRUE)
 all_spacers_merged[is.na(all_spacers_merged$Spacer), "Spacer"] <- 0
 
 # Subtype
@@ -75,48 +87,49 @@ all_spacers_merged$Prediction <- as.character(all_spacers_merged$Prediction)
 all_spacers_merged[grepl("Hybrid", all_spacers_merged$Prediction), "Prediction"] <- "Hybrid"
 all_spacers_merged$Spacers <- all_spacers_merged$Repeats - 1
 
-subtype <- aggregate(Spacer ~ Prediction + Origin + Target_Type, all_spacers_merged, sum) 
-subtype_rp <- aggregate(Spacers ~ Prediction + Origin + Target_Type, all_spacers_merged, sum) 
+subtype <- aggregate(Spacer ~ Prediction + Origin + Target_Type.y, all_spacers_merged, sum) 
+subtype_rp <- aggregate(Spacers ~ Prediction + Origin + Target_Type.y, all_spacers_merged, sum) 
 
 subtype$Spacers <- subtype_rp$Spacers
 subtype$Fraction <- subtype$Spacer / subtype$Spacers
 
+subtype$Prediction <- paste0(subtype$Prediction, " (n=", subtype$Spacers, ")")
 subtype$Prediction <- as.factor(subtype$Prediction)
 subtype$Prediction <- factor(subtype$Prediction, levels = rev(levels(subtype$Prediction)))
-subtype$Prediction <- relevel(subtype$Prediction, "Hybrid")
 
-p <- ggplot(subtype, aes(Prediction, Fraction, fill = Target_Type)) +
+p <- ggplot(subtype, aes(Prediction, Fraction, fill = Target_Type.y)) +
     theme_bw() +
     geom_bar(stat = "identity", position = position_dodge(width = 0.5, preserve = "single"), width = 0.5) +
     scale_y_continuous(labels = scales::percent) +
-    facet_grid(.~Origin) +
+    facet_grid(Origin~., scales = "free", space = "free") +
     coord_flip() +
-    theme(legend.position = c(0.9, 0.9)) +
+    theme(legend.position = c(0.8, 0.93)) +
     ylab("Fraction of spacers with a match") +
     xlab("Subtype") +
     scale_fill_discrete(name = "Target")
 p
-ggsave(p, file = "Figures/Spacer_fraction_subtypes.pdf", units = "cm", width = 16, height = 14)
+ggsave(p, file = "Figures/Spacer_fraction_subtypes.pdf", units = "cm", width = 10, height = 18)
 
 # class
-classes <- aggregate(Spacer ~ Class + Origin + Target_Type, all_spacers_merged, sum) 
-classes_rp <- aggregate(Spacers ~ Class + Origin + Target_Type, all_spacers_merged, sum) 
+classes <- aggregate(Spacer ~ Class + Origin + Target_Type.y, all_spacers_merged, sum) 
+classes_rp <- aggregate(Spacers ~ Class + Origin + Target_Type.y, all_spacers_merged, sum) 
 
 classes$Spacers <- classes_rp$Spacers
 classes$Fraction <- classes$Spacer / classes$Spacers
 
+classes$Class <- paste0(classes$Class, " (n=", classes$Spacers, ")")
 classes$Class <- as.factor(classes$Class)
 classes$Class <- factor(classes$Class, levels = rev(levels(classes$Class)))
 
-p <- ggplot(classes, aes(Class, Fraction, fill = Target_Type)) +
+p <- ggplot(classes, aes(Class, Fraction, fill = Target_Type.y)) +
     theme_bw() +
     geom_bar(stat = "identity", position = position_dodge(width = 0.5, preserve = "single"), width = 0.5) +
     scale_y_continuous(labels = scales::percent) +
-    facet_grid(.~Origin) +
+    facet_grid(Origin~., scales="free", space="free") +
     coord_flip() +
-    theme(legend.position = c(0.88, 0.1)) +
+    theme(legend.position = c(0.8, 0.93)) +
     ylab("Fraction of spacers with a match") +
     xlab("Class") +
     scale_fill_discrete(name = "Target")
 p
-ggsave(p, file = "Figures/Spacer_fraction_classes.pdf", units = "cm", width = 18, height = 15)
+ggsave(p, file = "Figures/Spacer_fraction_classes.pdf", units = "cm", width = 13, height = 20)

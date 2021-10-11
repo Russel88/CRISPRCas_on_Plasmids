@@ -40,6 +40,9 @@ prev_host_ClassP <- aggregate(Acc ~ Class + Prediction, cris_and_cas_host, funct
 prev_host_ClassP <- merge(prev_host_ClassP, data.frame(host_count), by.x = "Class", by.y = "Var1")
 prev_host_ClassP$Fraction <- prev_host_ClassP$Acc / prev_host_ClassP$Freq
 
+write.table(prev_plasmid_ClassP[, 1:4], file = "Tables/Fig1C_Plasmids.tab", sep="\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(prev_host_ClassP[, 1:4], file = "Tables/Fig1C_Chromosomes.tab", sep="\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
 prev_plasmid_Class$Origin <- "Plasmid"
 prev_host_Class$Origin <- "Chromosome"
 
@@ -130,7 +133,7 @@ prev_host_ClassP$Pair <- paste(prev_host_ClassP$Class, prev_host_ClassP$Predicti
 prev_all <- merge(prev_plasmid_ClassP, prev_host_ClassP, by = "Pair", all = TRUE)
 prev_all[is.na(prev_all$Fraction.x), "Fraction.x"] <- 0
 prev_all[is.na(prev_all$Fraction.y), "Fraction.y"] <- 0
-prev_all$Diff <- (prev_all$Fraction.x) - (prev_all$Fraction.y)
+prev_all$Diff <- log2((prev_all$Fraction.x) / (prev_all$Fraction.y))
 prev_all$Class <- ifelse(is.na(prev_all$Class.x), as.character(prev_all$Class.y), as.character(prev_all$Class.x))
 prev_all$Prediction <- ifelse(is.na(prev_all$Prediction.x), prev_all$Prediction.y, prev_all$Prediction.x)
 
@@ -141,18 +144,25 @@ prev_mat <- prev_mat[, -1]
 prev_mat <- prev_mat[rev(tree_class$tip.label[tree_class$edge[tree_class$edge[,2] <= length(tree_class$tip.label), 2]]),
          colnames(prev_mat)[c(1:20,22:29,21)]]
 
+min(unlist(prev_mat)[is.finite(unlist(prev_mat))], na.rm = TRUE)
+max(unlist(prev_mat)[is.finite(unlist(prev_mat))], na.rm = TRUE)
+
+prev_mat[prev_mat == -Inf] <- -10
+prev_mat[prev_mat == Inf] <- 5
+
 pheatmap::pheatmap(prev_mat,
                    cluster_cols = FALSE,
                    cluster_rows = FALSE,
-                   color = c("blue4","blue2","cyan3","cyan","lightblue","red", "red4"),
-                   breaks = c(-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1),
+                   color = c("darkblue","blue","blue","cyan4","cyan4","cyan3","cyan3","cyan","cyan","grey","grey","pink","pink","red","darkred"),
+                   gaps_row = c(2,9,12,16,18),
+                   breaks = c(-10, seq(-9, 3, 1), 4, 5),
                    na_col = "white",
                    gaps_col = c(8,11,15,20,25,28),
-                   filename = "Figures/Fig1_heatmap.pdf",
                    width = 8,
-                   height = 4.5)
+                   height = 4.5,
+                   filename = "Figures/Fig1_heatmap.pdf")
 
-write.csv(prev_all[, c("Class", "Prediction", "Fraction.x", "Fraction.y")], file = "Tables/Fig1_heatmap.csv", quote = FALSE, row.names = FALSE)
+
 
 # Stats
 plasmid_subtypes <- reshape2::dcast(Acc ~ Prediction, data = cris_and_cas_plasmid)

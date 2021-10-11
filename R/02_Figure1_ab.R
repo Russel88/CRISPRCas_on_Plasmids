@@ -12,6 +12,14 @@ cas_host_d$Origin <- "Chromosome"
 
 cas <- rbind(cas_plasmid_d, cas_host_d)
 
+orphansP <- as.data.frame.matrix(table(cas_plasmid_d$Prediction, cas_plasmid_d$Orphan))
+orphansP <- orphansP[rowSums(orphansP) > 0, ]
+write.table(orphansP, file = "Tables/Orphans_plasmids.tab", sep = "\t", quote = FALSE)
+
+orphans <- as.data.frame.matrix(table(cas_host_d$Prediction, cas_host_d$Orphan))
+orphans <- orphans[rowSums(orphans) > 0, ]
+write.table(orphans, file = "Tables/Orphans_chromosomes.tab", sep = "\t", quote = FALSE)
+
 ##### Distribution CRISPR ##### 
 cris_plasmid_d <- cris_plasmid[, c("Acc", "Repeats", "Distance", "Prediction", "Cell", "Subtype")]
 cris_host_d <- cris_host[, c("Acc", "Repeats", "Distance", "Prediction", "Cell", "Subtype")]
